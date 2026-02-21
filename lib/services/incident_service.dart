@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/incident.dart';
 import '../core/constants/api_constants.dart';
 import 'api_service.dart';
 
-/// Réponse paginée pour les incidents CVE
+/// Reponse paginee pour les incidents CVE
 class IncidentsResponse {
   final List<Incident> items;
   final int total;
@@ -29,14 +31,18 @@ class IncidentsResponse {
   }
 }
 
+/// Provider du service Incidents
+final incidentServiceProvider = Provider<IncidentService>((ref) {
+  final apiService = ref.watch(apiServiceProvider);
+  return IncidentService(apiService);
+});
+
 /// Service pour les incidents CVE via l'API Sentinelle
 class IncidentService {
   final ApiService _apiService;
+  IncidentService(this._apiService);
 
-  IncidentService({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
-
-  /// Récupère la liste paginée des incidents CVE
+  /// Recupere la liste paginee des incidents CVE
   Future<IncidentsResponse> getIncidents({
     int page = 1,
     int pageSize = 20,
@@ -60,24 +66,24 @@ class IncidentService {
       return IncidentsResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw e.error as ApiException? ??
-          ApiException(message: e.message ?? 'Erreur inconnue');
+          ApiException(message: e.message ?? 'Erreur inconnue', statusCode: 500);
     }
   }
 
-  /// Récupère le détail d'un incident CVE par ID
+  /// Recupere le detail d'un incident CVE par ID
   Future<Incident> getIncidentById(String id) async {
     try {
       final response = await _apiService.dio.get(
-        '${ApiConstants.incidents}/$id',
+        ApiConstants.incidentById(id),
       );
       return Incident.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw e.error as ApiException? ??
-          ApiException(message: e.message ?? 'Erreur inconnue');
+          ApiException(message: e.message ?? 'Erreur inconnue', statusCode: 500);
     }
   }
 
-  /// Récupère les incidents critiques récents
+  /// Recupere les incidents critiques recents
   Future<List<Incident>> getCriticalIncidents({int limit = 10}) async {
     final response = await getIncidents(
       severity: 'critical',
@@ -88,7 +94,7 @@ class IncidentService {
     return response.items;
   }
 
-  /// Récupère les incidents par score CVSS minimum
+  /// Recupere les incidents par score CVSS minimum
   Future<List<Incident>> getIncidentsByCvssScore({
     double minScore = 7.0,
     int limit = 20,
