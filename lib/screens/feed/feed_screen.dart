@@ -139,23 +139,23 @@ class _DiscoverNewsCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
+              ),
               const SizedBox(height: 12),
-
-              children: [
-                CircleAvatar(radius: 10, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=orcusium')),
-                const SizedBox(width: 8),
-                Text(item.sourceName ?? 'Sentinelle', style: Theme.of(context).textTheme.labelSmall),
-                const SizedBox(width: 8),
-                const Text('•', style: TextStyle(color: Colors.grey)),
-                const SizedBox(width: 8),
-                Text('Feb 27, 2023', style: Theme.of(context).textTheme.labelSmall),
-              ],
-            ),
-          ],
+              Row(
+                children: [
+                  CircleAvatar(radius: 10, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=orcusium')),
+                  const SizedBox(width: 8),
+                  Text(item.sourceName ?? 'Sentinelle', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(width: 8),
+                  const Text('•', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(width: 8),
+                  Text('Feb 27, 2023', style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
-    ],
+      ],
     );
   }
 }
