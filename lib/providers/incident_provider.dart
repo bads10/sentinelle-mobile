@@ -42,6 +42,7 @@ class IncidentState {
 // IncidentNotifier
 class IncidentNotifier extends StateNotifier<IncidentState> {
   final IncidentService _incidentService;
+
   IncidentNotifier(this._incidentService) : super(const IncidentState());
 
   Future<void> loadIncidents({bool refresh = false}) async {
@@ -107,7 +108,7 @@ final filteredIncidentsProvider = Provider<List<Incident>>((ref) {
   }
   return state.incidents
       .where((i) =>
-          i.severity?.toLowerCase() == state.selectedSeverity!.toLowerCase())
+          i.severity.toLowerCase() == state.selectedSeverity!.toLowerCase())
       .toList();
 });
 
