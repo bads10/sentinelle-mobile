@@ -1,48 +1,38 @@
 name: Flutter CI
-
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-
 env:
   APP_NAME: Sentinelle
   BUNDLE_ID: fr.orcusium.sentinelle
   ORG_NAME: Orcusium
   ORG_EMAIL: hello@orcusium.fr
   ORG_WEBSITE: https://www.orcusium.fr
-
 jobs:
   test:
     name: Tests unitaires Flutter
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
           cache: true
-
       - name: Get Flutter dependencies
         run: flutter pub get
-
       - name: Format code
         run: dart format .
         continue-on-error: true
-
       - name: Analyze code
         run: flutter analyze
         continue-on-error: true
-
       - name: Run unit tests
         run: flutter test --coverage
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -50,70 +40,58 @@ jobs:
           flags: unittests
           name: sentinelle-coverage
         continue-on-error: true
-
   build_android:
     name: Build Android APK
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
           cache: true
-
       - name: Get Flutter dependencies
         run: flutter pub get
-
       - name: Generate Android platform files
         run: flutter create --platforms android --org fr.orcusium --project-name sentinelle_mobile .
-
       - name: Set app name to Sentinelle
         run: |
           python3 - <<'EOF'
           import re, os
-
-          # Update app label in AndroidManifest.xml
           manifest = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest):
-              with open(manifest, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'android:label="[^"]*"', 'android:label="Sentinelle"', content)
-              with open(manifest, 'w') as f:
-                  f.write(content)
-              print('Updated AndroidManifest.xml label')
-
-          # Update applicationId in build.gradle or build.gradle.kts
+            with open(manifest, 'r') as f:
+              content = f.read()
+            content = re.sub(r'android:label="[^"]*"', 'android:label="Sentinelle"', content)
+            with open(manifest, 'w') as f:
+              f.write(content)
+            print('Updated AndroidManifest.xml label')
           gradle_kts = 'android/app/build.gradle.kts'
           gradle = 'android/app/build.gradle'
           if os.path.exists(gradle_kts):
-              with open(gradle_kts, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'applicationId\s*=\s*"[^"]*"', 'applicationId = "fr.orcusium.sentinelle"', content)
-              with open(gradle_kts, 'w') as f:
-                  f.write(content)
-              print('Updated applicationId in build.gradle.kts')
+            with open(gradle_kts, 'r') as f:
+              content = f.read()
+            content = re.sub(r'applicationId\s*=\s*"[^"]*"', 'applicationId = "fr.orcusium.sentinelle"', content)
+            with open(gradle_kts, 'w') as f:
+              f.write(content)
+            print('Updated applicationId in build.gradle.kts')
           elif os.path.exists(gradle):
-              with open(gradle, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'applicationId\s+"[^"]*"', 'applicationId "fr.orcusium.sentinelle"', content)
-              with open(gradle, 'w') as f:
-                  f.write(content)
-              print('Updated applicationId in build.gradle')
+            with open(gradle, 'r') as f:
+              content = f.read()
+            content = re.sub(r'applicationId\s+"[^"]*"', 'applicationId "fr.orcusium.sentinelle"', content)
+            with open(gradle, 'w') as f:
+              f.write(content)
+            print('Updated applicationId in build.gradle')
           EOF
-
       - name: Enable core library desugaring
         run: |
           python3 - <<'EOF'
@@ -121,129 +99,208 @@ jobs:
           gradle_file = 'android/app/build.gradle'
           gradle_kts_file = 'android/app/build.gradle.kts'
           if os.path.exists(gradle_kts_file):
-              with open(gradle_kts_file, 'r') as f:
-                  content = f.read()
-              if 'isCoreLibraryDesugaringEnabled' not in content:
-                  content = re.sub(
-                      r'(compileOptions\s*\{)',
-                      r'\1\n        isCoreLibraryDesugaringEnabled = true',
-                      content
-                  )
-              if 'isCoreLibraryDesugaringEnabled' not in content:
-                  content = re.sub(
-                      r'(android\s*\{)',
-                      r'\1\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n    }',
-                      content, count=1
-                  )
-              if 'coreLibraryDesugaring' not in content:
-                  content += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")\n}\n'
-              with open(gradle_kts_file, 'w') as f:
-                  f.write(content)
-              print('Updated', gradle_kts_file)
+            with open(gradle_kts_file, 'r') as f:
+              content = f.read()
+            if 'isCoreLibraryDesugaringEnabled' not in content:
+              content = re.sub(
+                r'(compileOptions\s*\{)',
+                r'\1\n        isCoreLibraryDesugaringEnabled = true',
+                content
+              )
+            if 'isCoreLibraryDesugaringEnabled' not in content:
+              content = re.sub(
+                r'(android\s*\{)',
+                r'\1\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n    }',
+                content, count=1
+              )
+            if 'coreLibraryDesugaring' not in content:
+              content += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")\n}\n'
+            with open(gradle_kts_file, 'w') as f:
+              f.write(content)
+            print('Updated', gradle_kts_file)
           elif os.path.exists(gradle_file):
-              with open(gradle_file, 'r') as f:
-                  content = f.read()
-              if 'coreLibraryDesugaringEnabled' not in content:
-                  content = re.sub(
-                      r'(compileOptions\s*\{)',
-                      r'\1\n        coreLibraryDesugaringEnabled true',
-                      content
-                  )
-              if 'coreLibraryDesugaringEnabled' not in content:
-                  content = re.sub(
-                      r'(android\s*\{)',
-                      r'\1\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n    }',
-                      content, count=1
-                  )
-              if 'coreLibraryDesugaring' not in content:
-                  content += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'\n}\n"
-              with open(gradle_file, 'w') as f:
-                  f.write(content)
-              print('Updated', gradle_file)
+            with open(gradle_file, 'r') as f:
+              content = f.read()
+            if 'coreLibraryDesugaringEnabled' not in content:
+              content = re.sub(
+                r'(compileOptions\s*\{)',
+                r'\1\n        coreLibraryDesugaringEnabled true',
+                content
+              )
+            if 'coreLibraryDesugaringEnabled' not in content:
+              content = re.sub(
+                r'(android\s*\{)',
+                r'\1\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n    }',
+                content, count=1
+              )
+            if 'coreLibraryDesugaring' not in content:
+              content += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'\n}\n"
+            with open(gradle_file, 'w') as f:
+              f.write(content)
+            print('Updated', gradle_file)
           else:
-              print('No build.gradle file found!')
-              exit(1)
+            print('No build.gradle file found!')
+            exit(1)
           EOF
-
-      - name: Build APK (debug)
+      - name: Generate Android keystore
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          keytool -genkeypair \
+            -alias "$KEY_ALIAS" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore android/app/orcusium-release.jks \
+            -storepass "$STORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "CN=Orcusium, OU=Mobile, O=Orcusium, L=France, ST=France, C=FR"
+          echo "Keystore generated successfully"
+      - name: Configure signing in build.gradle
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          python3 - <<'EOF'
+          import re, os
+          key_alias = os.environ['KEY_ALIAS']
+          key_password = os.environ['KEY_PASSWORD']
+          store_password = os.environ['STORE_PASSWORD']
+          gradle_kts = 'android/app/build.gradle.kts'
+          gradle = 'android/app/build.gradle'
+          signing_block_kts = f"""
+          signingConfigs {{
+              create("release") {{
+                  keyAlias = "{key_alias}"
+                  keyPassword = "{key_password}"
+                  storeFile = file("orcusium-release.jks")
+                  storePassword = "{store_password}"
+              }}
+          }}
+          """
+          signing_block = f"""
+              signingConfigs {{
+                  release {{
+                      keyAlias "{key_alias}"
+                      keyPassword "{key_password}"
+                      storeFile file("orcusium-release.jks")
+                      storePassword "{store_password}"
+                  }}
+              }}
+          """
+          if os.path.exists(gradle_kts):
+            with open(gradle_kts, 'r') as f:
+              content = f.read()
+            if 'signingConfigs' not in content:
+              content = re.sub(
+                r'(android\s*\{)',
+                r'\1' + signing_block_kts,
+                content, count=1
+              )
+              content = re.sub(
+                r'(buildTypes\s*\{[^}]*release\s*\{)',
+                r'\1\n            signingConfig = signingConfigs.getByName("release")',
+                content
+              )
+            with open(gradle_kts, 'w') as f:
+              f.write(content)
+            print('Configured signing in build.gradle.kts')
+          elif os.path.exists(gradle):
+            with open(gradle, 'r') as f:
+              content = f.read()
+            if 'signingConfigs' not in content:
+              content = re.sub(
+                r'(android\s*\{)',
+                r'\1' + signing_block,
+                content, count=1
+              )
+              content = re.sub(
+                r'(buildTypes\s*\{[^}]*release\s*\{)',
+                r'\1\n            signingConfig signingConfigs.release',
+                content
+              )
+            with open(gradle, 'w') as f:
+              f.write(content)
+            print('Configured signing in build.gradle')
+          EOF
+      - name: Build signed release APK
+        run: flutter build apk --release
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinelle-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+      - name: Build debug APK (fallback)
+        if: failure()
         run: flutter build apk --debug
-
-      - name: Upload APK artifact
+      - name: Upload debug APK artifact (fallback)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: sentinelle-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
-
   build_ios:
     name: Build iOS (sans signature)
     runs-on: macos-latest
     needs: test
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
           cache: true
-
       - name: Get Flutter dependencies
         run: flutter pub get
-
       - name: Generate iOS platform files
         run: flutter create --platforms ios --org fr.orcusium --project-name sentinelle_mobile .
-
       - name: Set iOS app name and bundle ID
         run: |
           python3 - <<'EOF'
           import re, os
-
-          # Update Info.plist display name
           plist = 'ios/Runner/Info.plist'
           if os.path.exists(plist):
-              with open(plist, 'r') as f:
-                  content = f.read()
-              # Set CFBundleDisplayName
-              if 'CFBundleDisplayName' in content:
-                  content = re.sub(
-                      r'<key>CFBundleDisplayName</key>\s*<string>[^<]*</string>',
-                      '<key>CFBundleDisplayName</key>\n\t<string>Sentinelle</string>',
-                      content
-                  )
-              else:
-                  content = content.replace(
-                      '<key>CFBundleName</key>',
-                      '<key>CFBundleDisplayName</key>\n\t<string>Sentinelle</string>\n\t<key>CFBundleName</key>'
-                  )
-              # Set CFBundleName
+            with open(plist, 'r') as f:
+              content = f.read()
+            if 'CFBundleDisplayName' in content:
               content = re.sub(
-                  r'<key>CFBundleName</key>\s*<string>[^<]*</string>',
-                  '<key>CFBundleName</key>\n\t<string>Sentinelle</string>',
-                  content
+                r'<key>CFBundleDisplayName</key>\s*<string>[^<]*</string>',
+                '<key>CFBundleDisplayName</key>\n\t<string>Sentinelle</string>',
+                content
               )
-              with open(plist, 'w') as f:
-                  f.write(content)
-              print('Updated Info.plist')
-
-          # Update bundle ID in project.pbxproj
+            else:
+              content = content.replace(
+                '<key>CFBundleName</key>',
+                '<key>CFBundleDisplayName</key>\n\t<string>Sentinelle</string>\n\t<key>CFBundleName</key>'
+              )
+            content = re.sub(
+              r'<key>CFBundleName</key>\s*<string>[^<]*</string>',
+              '<key>CFBundleName</key>\n\t<string>Sentinelle</string>',
+              content
+            )
+            with open(plist, 'w') as f:
+              f.write(content)
+            print('Updated Info.plist')
           pbxproj = 'ios/Runner.xcodeproj/project.pbxproj'
           if os.path.exists(pbxproj):
-              with open(pbxproj, 'r') as f:
-                  content = f.read()
-              content = re.sub(
-                  r'PRODUCT_BUNDLE_IDENTIFIER = [^;]+;',
-                  'PRODUCT_BUNDLE_IDENTIFIER = fr.orcusium.sentinelle;',
-                  content
-              )
-              with open(pbxproj, 'w') as f:
-                  f.write(content)
-              print('Updated bundle ID in project.pbxproj')
+            with open(pbxproj, 'r') as f:
+              content = f.read()
+            content = re.sub(
+              r'PRODUCT_BUNDLE_IDENTIFIER = [^;]+;',
+              'PRODUCT_BUNDLE_IDENTIFIER = fr.orcusium.sentinelle;',
+              content
+            )
+            with open(pbxproj, 'w') as f:
+              f.write(content)
+            print('Updated bundle ID in project.pbxproj')
           EOF
-
       - name: Build iOS (simulator)
         run: flutter build ios --simulator --debug
