@@ -16,7 +16,7 @@ class SentinelleApp extends ConsumerWidget {
       title: 'Sentinelle',
       debugShowCheckedModeBanner: false,
 
-      // Thème dark cybersécurité
+      // Thème News App
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,

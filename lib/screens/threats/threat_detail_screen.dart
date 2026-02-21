@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_theme.dart';
 import '../../models/threat.dart';
 import '../../providers/threat_provider.dart';
 
-/// Écran détail d'une menace ransomware
+/// Écran détail d'une menace ransomware - style article de presse
 class ThreatDetailScreen extends ConsumerWidget {
   final String threatId;
 
@@ -16,12 +17,27 @@ class ThreatDetailScreen extends ConsumerWidget {
     return threatAsync.when(
       data: (threat) => _ThreatDetailContent(threat: threat),
       loading: () => Scaffold(
-        appBar: AppBar(leading: const BackButton()),
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: AppTheme.backgroundDark,
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundDark,
+          leading: const BackButton(color: AppTheme.textPrimary),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryRed, strokeWidth: 2),
+        ),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(leading: const BackButton()),
-        body: Center(child: Text('Erreur: ${e.toString()}')),
+        backgroundColor: AppTheme.backgroundDark,
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundDark,
+          leading: const BackButton(color: AppTheme.textPrimary),
+        ),
+        body: Center(
+          child: Text(
+            'Erreur: ${e.toString()}',
+            style: const TextStyle(color: AppTheme.textSecondary),
+          ),
+        ),
       ),
     );
   }
@@ -32,186 +48,291 @@ class _ThreatDetailContent extends StatelessWidget {
 
   const _ThreatDetailContent({required this.threat});
 
-  Color _severityColor(String severity) {
-    switch (severity.toLowerCase()) {
-      case 'critical':
-        return Colors.red;
-      case 'high':
-        return Colors.orange;
-      case 'medium':
-        return Colors.yellow.shade700;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final color = _severityColor(threat.severity);
+    final color = AppTheme.severityColor(threat.severity);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(threat.name),
-        leading: const BackButton(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // En-tête de la menace
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: color.withOpacity(0.2),
-                      child: Icon(Icons.bug_report, color: color, size: 32),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            threat.name,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            threat.family,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              threat.severity.toUpperCase(),
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+      backgroundColor: AppTheme.backgroundDark,
+      body: CustomScrollView(
+        slivers: [
+          // ── AppBar style article ──
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: AppTheme.backgroundDark,
+            leading: const BackButton(color: AppTheme.textPrimary),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: color),
+            ),
+          ),
+
+          // ── Hero header ──
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppTheme.surfaceDark,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: Container(width: 4, color: color),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Badges
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              color: color,
+                              child: Text(
+                                AppTheme.severityLabel(threat.severity),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppTheme.dividerColor),
+                              ),
+                              child: const Text(
+                                'RANSOMWARE',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textDisabled,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Nom - gros titre
+                        Text(
+                          threat.name,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        // Famille
+                        Text(
+                          threat.family,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary,
+                            height: 1.4,
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Meta
+                        Row(
+                          children: [
+                            if (threat.reportedAt.isNotEmpty) ...[
+                              const Icon(Icons.schedule, size: 11, color: AppTheme.textDisabled),
+                              const SizedBox(width: 4),
+                              Text(
+                                threat.reportedAt,
+                                style: const TextStyle(fontSize: 10, color: AppTheme.textDisabled),
+                              ),
+                            ],
+                            if (threat.source != null) ...[
+                              const Text('  ·  ', style: TextStyle(color: AppTheme.textDisabled)),
+                              Text(
+                                threat.source!.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textDisabled,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Espaceur
+          SliverToBoxAdapter(
+            child: Container(height: 8, color: AppTheme.backgroundDark),
+          ),
+
+          // ── Description ──
+          if (threat.description.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppTheme.surfaceDark,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(title: 'DESCRIPTION'),
+                    const SizedBox(height: 10),
+                    Text(
+                      threat.description,
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                        height: 1.6,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            // Informations générales
-            _buildSection(
-              context,
-              title: 'Informations',
-              children: [
-                _buildInfoRow(context, 'ID', threat.id),
-                if (threat.reportedAt.isNotEmpty)
-                  _buildInfoRow(context, 'Signalement', threat.reportedAt),
-                if (threat.source != null)
-                  _buildInfoRow(context, 'Source', threat.source!),
-                if (threat.sourceUrl != null)
-                  _buildInfoRow(context, 'URL Source', threat.sourceUrl!),
-                _buildInfoRow(context, 'IoC Count', threat.iocCount.toString()),
-                _buildInfoRow(context, 'Actif', threat.isActive ? 'Oui' : 'Non'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Description
-            if (threat.description.isNotEmpty) ...[
-              _buildSection(
-                context,
-                title: 'Description',
+
+          SliverToBoxAdapter(
+            child: Container(height: 8, color: AppTheme.backgroundDark),
+          ),
+
+          // ── Informations techniques ──
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppTheme.surfaceDark,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      threat.description,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
+                  _SectionTitle(title: 'INFORMATIONS TECHNIQUES'),
+                  const SizedBox(height: 12),
+                  _InfoRow(label: 'IDENTIFIANT', value: threat.id),
+                  _InfoRow(label: 'FAMILLE', value: threat.family),
+                  _InfoRow(label: 'ACTIF', value: threat.isActive ? 'OUI' : 'NON',
+                      valueColor: threat.isActive ? AppTheme.severityCritical : AppTheme.severityLow),
+                  _InfoRow(label: 'INDICATEURS', value: '${threat.iocCount}'),
+                  if (threat.source != null)
+                    _InfoRow(label: 'SOURCE', value: threat.source!),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
-            // Tags
-            if (threat.tags.isNotEmpty) ...[
-              Text(
-                'Tags',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          // ── Tags ──
+          if (threat.tags.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Container(height: 8, color: AppTheme.backgroundDark),
+            ),
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppTheme.surfaceDark,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(title: 'TAGS'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: threat.tags.map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppTheme.dividerColor),
+                        ),
+                        child: Text(
+                          tag.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: AppTheme.textDisabled,
+                            letterSpacing: 0.8,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: threat.tags
-                    .map(
-                      (tag) => Chip(
-                        label: Text(tag, style: const TextStyle(fontSize: 12)),
-                        backgroundColor: color.withOpacity(0.1),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+            ),
           ],
-        ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildSection(
-    BuildContext context, {
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
+        Container(
+          width: 2,
+          height: 12,
+          color: AppTheme.primaryRed,
+          margin: const EdgeInsets.only(right: 7),
+        ),
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: AppTheme.textSecondary,
+            letterSpacing: 1.5,
           ),
         ),
-        const Divider(),
-        ...children,
       ],
     );
   }
+}
 
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _InfoRow({required this.label, required this.value, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 140,
+            width: 120,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDisabled,
+                letterSpacing: 0.8,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: 13,
+                color: valueColor ?? AppTheme.textPrimary,
+                fontWeight: valueColor != null ? FontWeight.w700 : FontWeight.normal,
+              ),
             ),
           ),
         ],

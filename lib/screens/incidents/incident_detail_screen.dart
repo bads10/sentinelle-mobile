@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_theme.dart';
 import '../../models/incident.dart';
 import '../../providers/incident_provider.dart';
 
-/// Écran détail d'un incident CVE
+/// Écran détail d'un incident CVE - style article de presse
 class IncidentDetailScreen extends ConsumerWidget {
   final String incidentId;
 
@@ -16,12 +17,27 @@ class IncidentDetailScreen extends ConsumerWidget {
     return incidentAsync.when(
       data: (incident) => _IncidentDetailContent(incident: incident),
       loading: () => Scaffold(
-        appBar: AppBar(leading: const BackButton()),
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: AppTheme.backgroundDark,
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundDark,
+          leading: const BackButton(color: AppTheme.textPrimary),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryRed, strokeWidth: 2),
+        ),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(leading: const BackButton()),
-        body: Center(child: Text('Erreur: ${e.toString()}')),
+        backgroundColor: AppTheme.backgroundDark,
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundDark,
+          leading: const BackButton(color: AppTheme.textPrimary),
+        ),
+        body: Center(
+          child: Text(
+            'Erreur: ${e.toString()}',
+            style: const TextStyle(color: AppTheme.textSecondary),
+          ),
+        ),
       ),
     );
   }
@@ -32,215 +48,327 @@ class _IncidentDetailContent extends StatelessWidget {
 
   const _IncidentDetailContent({required this.incident});
 
-  Color _cvssColor(double? score) {
-    if (score == null) return Colors.grey;
-    if (score >= 9.0) return Colors.red;
-    if (score >= 7.0) return Colors.orange;
-    if (score >= 4.0) return Colors.yellow.shade700;
-    return Colors.green;
-  }
-
-  String _cvssLabel(double? score) {
-    if (score == null) return 'Non évalué';
-    if (score >= 9.0) return 'CRITIQUE';
-    if (score >= 7.0) return 'HAUTE';
-    if (score >= 4.0) return 'MOYENNE';
-    return 'FAIBLE';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final color = _cvssColor(incident.cvssScore);
+    final score = incident.cvssScore;
+    final color = AppTheme.cvssColor(score);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(incident.cveId),
-        leading: const BackButton(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Score CVSS
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: color.withOpacity(0.2),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            incident.cvssScore?.toStringAsFixed(1) ?? '?',
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          Text(
-                            'CVSS',
-                            style: TextStyle(color: color, fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            incident.cveId,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              _cvssLabel(incident.cvssScore),
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+      backgroundColor: AppTheme.backgroundDark,
+      body: CustomScrollView(
+        slivers: [
+          // ── AppBar ──
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: AppTheme.backgroundDark,
+            leading: const BackButton(color: AppTheme.textPrimary),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: color),
+            ),
+          ),
+
+          // ── Hero header ──
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppTheme.surfaceDark,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: Container(width: 4, color: color),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // CVE ID + CVSS badge
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              color: AppTheme.categoryIncident,
+                              child: Text(
+                                incident.cveId,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.0,
+                                  fontFamily: 'Courier',
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 10),
+                            Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.12),
+                                  border: Border.all(color: color.withOpacity(0.5)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      score.toStringAsFixed(1),
+                                      style: TextStyle(
+                                        fontFamily: 'Georgia',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: color,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    Text(
+                                      'CVSS',
+                                      style: TextStyle(
+                                        fontSize: 7,
+                                        fontWeight: FontWeight.w700,
+                                        color: color.withOpacity(0.7),
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Résumé - gros titre
+                        Text(
+                          incident.summary,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                height: 1.25,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Meta
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 11, color: AppTheme.textDisabled),
+                            const SizedBox(width: 4),
+                            Text(
+                              incident.publishedAt,
+                              style: const TextStyle(fontSize: 10, color: AppTheme.textDisabled),
+                            ),
+                            if (incident.vendor != null) ...[
+                              const Text('  ·  ', style: TextStyle(color: AppTheme.textDisabled)),
+                              Text(
+                                incident.vendor!.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textDisabled,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(child: Container(height: 8, color: AppTheme.backgroundDark)),
+
+          // ── Métriques ──
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppTheme.surfaceDark,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionTitle(title: 'MÉTRIQUES'),
+                  const SizedBox(height: 12),
+                  _InfoRow(label: 'SCORE CVSS', value: score.toStringAsFixed(1), valueColor: color),
+                  _InfoRow(label: 'SÉVÉRITÉ', value: incident.severity.toUpperCase()),
+                  _InfoRow(label: 'PUBLIÉ LE', value: incident.publishedAt),
+                  if (incident.updatedAt.isNotEmpty)
+                    _InfoRow(label: 'MIS À JOUR', value: incident.updatedAt),
+                  if (incident.vendor != null)
+                    _InfoRow(label: 'FOURNISSEUR', value: incident.vendor!),
+                ],
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(child: Container(height: 8, color: AppTheme.backgroundDark)),
+
+          // ── Produits affectés ──
+          if (incident.affectedProducts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppTheme.surfaceDark,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(title: 'PRODUITS AFFECTÉS'),
+                    const SizedBox(height: 10),
+                    ...incident.affectedProducts.map((p) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.textDisabled,
+                                  shape: BoxShape.circle,
+                                ),
+                                margin: const EdgeInsets.only(right: 10),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  p,
+                                  style: const TextStyle(
+                                    fontFamily: 'Georgia',
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        )),
+                  ],
+                ),
+              ),
+            ),
+
+          // ── Patch URL ──
+          if (incident.patchUrl != null) ...[
+            SliverToBoxAdapter(child: Container(height: 8, color: AppTheme.backgroundDark)),
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppTheme.surfaceDark,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(title: 'CORRECTIF'),
+                    const SizedBox(height: 10),
+                    Text(
+                      incident.patchUrl!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.categoryNews,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            // Description / Résumé
-            _buildSection(
-              context,
-              title: 'Description',
-              children: [
-                Text(
-                  incident.summary,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Métriques
-            _buildSection(
-              context,
-              title: 'Métriques',
-              children: [
-                if (incident.cvssScore != null)
-                  _buildInfoRow(context, 'Score CVSS', incident.cvssScore!.toStringAsFixed(1)),
-                _buildInfoRow(context, 'Sévérité', incident.severity),
-                if (incident.publishedAt.isNotEmpty)
-                  _buildInfoRow(context, 'Publié le', incident.publishedAt),
-                if (incident.updatedAt.isNotEmpty)
-                  _buildInfoRow(context, 'Mis à jour', incident.updatedAt),
-                if (incident.vendor != null)
-                  _buildInfoRow(context, 'Fournisseur', incident.vendor!),
-                if (incident.patchUrl != null)
-                  _buildInfoRow(context, 'Patch URL', incident.patchUrl!),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Produits affectés
-            if (incident.affectedProducts.isNotEmpty) ...[
-              _buildSection(
-                context,
-                title: 'Produits affectés',
-                children: incident.affectedProducts
-                    .map((p) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2.0),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.chevron_right, size: 16),
-                              const SizedBox(width: 4),
-                              Text(p, style: Theme.of(context).textTheme.bodyMedium),
-                            ],
-                          ),
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Références
-            if (incident.references.isNotEmpty) ...[
-              Text(
-                'Références',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Divider(),
-              ...incident.references.map(
-                (ref) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Text(
-                    ref,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ],
-        ),
+
+          // ── Références ──
+          if (incident.references.isNotEmpty) ...[
+            SliverToBoxAdapter(child: Container(height: 8, color: AppTheme.backgroundDark)),
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppTheme.surfaceDark,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(title: 'RÉFÉRENCES'),
+                    const SizedBox(height: 10),
+                    ...incident.references.map((ref) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Text(
+                            ref,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.categoryNews,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildSection(
-    BuildContext context, {
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
+        Container(
+          width: 2,
+          height: 12,
+          color: AppTheme.categoryIncident,
+          margin: const EdgeInsets.only(right: 7),
+        ),
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: AppTheme.textSecondary,
+            letterSpacing: 1.5,
           ),
         ),
-        const Divider(),
-        ...children,
       ],
     );
   }
+}
 
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _InfoRow({required this.label, required this.value, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 140,
+            width: 120,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDisabled,
+                letterSpacing: 0.8,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: 13,
+                color: valueColor ?? AppTheme.textPrimary,
+                fontWeight: valueColor != null ? FontWeight.w700 : FontWeight.normal,
+              ),
             ),
           ),
         ],
