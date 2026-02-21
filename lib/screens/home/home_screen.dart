@@ -10,9 +10,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final threatsAsync = ref.watch(threatsProvider);
-    final incidentsAsync = ref.watch(incidentsProvider);
-    final feedAsync = ref.watch(rssFeedProvider);
+    final threatsState = ref.watch(threatNotifierProvider);
+    final incidentsState = ref.watch(incidentNotifierProvider);
+    final feedState = ref.watch(rssNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,18 +22,18 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.invalidate(threatsProvider);
-              ref.invalidate(incidentsProvider);
-              ref.invalidate(rssFeedProvider);
+              ref.invalidate(threatNotifierProvider);
+              ref.invalidate(incidentNotifierProvider);
+              ref.invalidate(rssNotifierProvider);
             },
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(threatsProvider);
-          ref.invalidate(incidentsProvider);
-          ref.invalidate(rssFeedProvider);
+          ref.invalidate(threatNotifierProvider);
+          ref.invalidate(incidentNotifierProvider);
+          ref.invalidate(rssNotifierProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -44,11 +44,9 @@ class HomeScreen extends ConsumerWidget {
               // En-tête de bienvenue
               _buildHeader(context),
               const SizedBox(height: 24),
-
               // Section statistiques rapides
-              _buildQuickStats(context, threatsAsync, incidentsAsync),
+              _buildQuickStats(context, threatsState, incidentsState),
               const SizedBox(height: 24),
-
               // Section menaces récentes
               _buildSection(
                 context,
@@ -56,25 +54,27 @@ class HomeScreen extends ConsumerWidget {
                 icon: Icons.bug_report,
                 color: Colors.red,
                 onSeeAll: () => Navigator.pushNamed(context, '/threats'),
-                child: threatsAsync.when(
-                  data: (threats) => threats.isEmpty
-                      ? const _EmptyState(message: 'Aucune menace détectée')
-                      : Column(
-                          children: threats
-                              .take(3)
-                              .map((t) => _ThreatListTile(
-                                    name: t.name,
-                                    severity: t.severity,
-                                    date: t.firstSeen,
-                                  ))
-                              .toList(),
-                        ),
-                  loading: () => const _LoadingIndicator(),
-                  error: (e, _) => _ErrorState(message: e.toString()),
-                ),
+                child: threatsState.isLoading
+                    ? const _LoadingIndicator()
+                    : threatsState.error != null
+                        ? _ErrorState(message: threatsState.error!)
+                        : threatsState.threats.isEmpty
+                            ? const _EmptyState(
+                                message: 'Aucune menace détectée')
+                            : Column(
+                                children: threatsState.threats
+                                    .take(3)
+                                    .map(
+                                      (t) => _ThreatListTile(
+                                        name: t.name,
+                                        severity: t.severity,
+                                        reportedAt: t.reportedAt,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
               ),
               const SizedBox(height: 24),
-
               // Section incidents CVE
               _buildSection(
                 context,
@@ -82,25 +82,27 @@ class HomeScreen extends ConsumerWidget {
                 icon: Icons.warning_amber,
                 color: Colors.orange,
                 onSeeAll: () => Navigator.pushNamed(context, '/incidents'),
-                child: incidentsAsync.when(
-                  data: (incidents) => incidents.isEmpty
-                      ? const _EmptyState(message: 'Aucun incident récent')
-                      : Column(
-                          children: incidents
-                              .take(3)
-                              .map((i) => _IncidentListTile(
-                                    cveId: i.cveId,
-                                    description: i.description,
-                                    cvssScore: i.cvssScore,
-                                  ))
-                              .toList(),
-                        ),
-                  loading: () => const _LoadingIndicator(),
-                  error: (e, _) => _ErrorState(message: e.toString()),
-                ),
+                child: incidentsState.isLoading
+                    ? const _LoadingIndicator()
+                    : incidentsState.error != null
+                        ? _ErrorState(message: incidentsState.error!)
+                        : incidentsState.incidents.isEmpty
+                            ? const _EmptyState(
+                                message: 'Aucun incident récent')
+                            : Column(
+                                children: incidentsState.incidents
+                                    .take(3)
+                                    .map(
+                                      (i) => _IncidentListTile(
+                                        cveId: i.cveId,
+                                        summary: i.summary,
+                                        cvssScore: i.cvssScore,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
               ),
               const SizedBox(height: 24),
-
               // Section flux RSS
               _buildSection(
                 context,
@@ -108,22 +110,25 @@ class HomeScreen extends ConsumerWidget {
                 icon: Icons.rss_feed,
                 color: Colors.green,
                 onSeeAll: () => Navigator.pushNamed(context, '/feed'),
-                child: feedAsync.when(
-                  data: (items) => items.isEmpty
-                      ? const _EmptyState(message: 'Aucun article disponible')
-                      : Column(
-                          children: items
-                              .take(3)
-                              .map((item) => _RssListTile(
-                                    title: item.title,
-                                    source: item.source,
-                                    publishedAt: item.publishedAt,
-                                  ))
-                              .toList(),
-                        ),
-                  loading: () => const _LoadingIndicator(),
-                  error: (e, _) => _ErrorState(message: e.toString()),
-                ),
+                child: feedState.isLoading
+                    ? const _LoadingIndicator()
+                    : feedState.error != null
+                        ? _ErrorState(message: feedState.error!)
+                        : feedState.items.isEmpty
+                            ? const _EmptyState(
+                                message: 'Aucun article disponible')
+                            : Column(
+                                children: feedState.items
+                                    .take(3)
+                                    .map(
+                                      (item) => _RssListTile(
+                                        title: item.title,
+                                        source: item.sourceName ?? '',
+                                        publishedAt: item.publishedAt,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
               ),
               const SizedBox(height: 16),
             ],
@@ -155,19 +160,17 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildQuickStats(
     BuildContext context,
-    AsyncValue<List<dynamic>> threats,
-    AsyncValue<List<dynamic>> incidents,
+    ThreatState threats,
+    IncidentState incidents,
   ) {
     return Row(
       children: [
         Expanded(
           child: _StatCard(
             label: 'Menaces',
-            value: threats.when(
-              data: (t) => t.length.toString(),
-              loading: () => '...',
-              error: (_, __) => '?',
-            ),
+            value: threats.isLoading
+                ? '...'
+                : threats.threats.length.toString(),
             icon: Icons.bug_report,
             color: Colors.red,
           ),
@@ -176,11 +179,9 @@ class HomeScreen extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             label: 'Incidents',
-            value: incidents.when(
-              data: (i) => i.length.toString(),
-              loading: () => '...',
-              error: (_, __) => '?',
-            ),
+            value: incidents.isLoading
+                ? '...'
+                : incidents.incidents.length.toString(),
             icon: Icons.warning_amber,
             color: Colors.orange,
           ),
@@ -238,20 +239,17 @@ class HomeScreen extends ConsumerWidget {
 }
 
 // Widgets privés de l'écran home
-
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
-
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
   });
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -279,14 +277,12 @@ class _StatCard extends StatelessWidget {
 class _ThreatListTile extends StatelessWidget {
   final String name;
   final String severity;
-  final DateTime? date;
-
+  final String reportedAt;
   const _ThreatListTile({
     required this.name,
     required this.severity,
-    this.date,
+    required this.reportedAt,
   });
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -294,9 +290,9 @@ class _ThreatListTile extends StatelessWidget {
       leading: const Icon(Icons.bug_report, color: Colors.red),
       title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(severity.toUpperCase()),
-      trailing: date != null
+      trailing: reportedAt.isNotEmpty
           ? Text(
-              '${date!.day}/${date!.month}',
+              reportedAt,
               style: Theme.of(context).textTheme.bodySmall,
             )
           : null,
@@ -306,28 +302,26 @@ class _ThreatListTile extends StatelessWidget {
 
 class _IncidentListTile extends StatelessWidget {
   final String cveId;
-  final String description;
-  final double? cvssScore;
-
+  final String summary;
+  final double cvssScore;
   const _IncidentListTile({
     required this.cveId,
-    required this.description,
-    this.cvssScore,
+    required this.summary,
+    required this.cvssScore,
   });
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
       leading: const Icon(Icons.warning_amber, color: Colors.orange),
       title: Text(cveId),
-      subtitle: Text(description, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: cvssScore != null
-          ? Text(
-              cvssScore!.toStringAsFixed(1),
-              style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-            )
-          : null,
+      subtitle:
+          Text(summary, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: Text(
+        cvssScore.toStringAsFixed(1),
+        style: const TextStyle(
+            color: Colors.orange, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }
@@ -335,14 +329,12 @@ class _IncidentListTile extends StatelessWidget {
 class _RssListTile extends StatelessWidget {
   final String title;
   final String source;
-  final DateTime? publishedAt;
-
+  final String publishedAt;
   const _RssListTile({
     required this.title,
     required this.source,
-    this.publishedAt,
+    required this.publishedAt,
   });
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -356,7 +348,6 @@ class _RssListTile extends StatelessWidget {
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
-
   @override
   Widget build(BuildContext context) {
     return const Center(
@@ -370,15 +361,14 @@ class _LoadingIndicator extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final String message;
-
   const _EmptyState({required this.message});
-
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
+        child: Text(message,
+            style: Theme.of(context).textTheme.bodyMedium),
       ),
     );
   }
@@ -386,9 +376,7 @@ class _EmptyState extends StatelessWidget {
 
 class _ErrorState extends StatelessWidget {
   final String message;
-
   const _ErrorState({required this.message});
-
   @override
   Widget build(BuildContext context) {
     return Center(
