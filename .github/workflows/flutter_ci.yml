@@ -75,16 +75,56 @@ jobs:
 
       - name: Enable core library desugaring
         run: |
-          sed -i 's/android {/android {\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n    }/' android/app/build.gradle
-          if ! grep -q 'coreLibraryDesugaring' android/app/build.gradle; then
-            sed -i 's/android {/android {\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_1_8\n        targetCompatibility JavaVersion.VERSION_1_8\n        coreLibraryDesugaringEnabled true\n    }/' android/app/build.gradle
-          fi
-          if ! grep -q 'coreLibraryDesugaring ' android/app/build.gradle; then
-            echo "" >> android/app/build.gradle
-            echo "dependencies {" >> android/app/build.gradle
-            echo "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'" >> android/app/build.gradle
-            echo "}" >> android/app/build.gradle
-          fi
+          python3 - <<'EOF'
+          import re, os
+
+          gradle_file = 'android/app/build.gradle'
+          gradle_kts_file = 'android/app/build.gradle.kts'
+
+          if os.path.exists(gradle_kts_file):
+              with open(gradle_kts_file, 'r') as f:
+                  content = f.read()
+              if 'isCoreLibraryDesugaringEnabled' not in content:
+                  content = re.sub(
+                      r'(compileOptions\s*\{)',
+                      r'\1\n        isCoreLibraryDesugaringEnabled = true',
+                      content
+                  )
+                  if 'isCoreLibraryDesugaringEnabled' not in content:
+                      content = re.sub(
+                          r'(android\s*\{)',
+                          r'\1\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n    }',
+                          content, count=1
+                      )
+              if 'coreLibraryDesugaring' not in content:
+                  content += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")\n}\n'
+              with open(gradle_kts_file, 'w') as f:
+                  f.write(content)
+              print('Updated', gradle_kts_file)
+          elif os.path.exists(gradle_file):
+              with open(gradle_file, 'r') as f:
+                  content = f.read()
+              if 'coreLibraryDesugaringEnabled' not in content:
+                  content = re.sub(
+                      r'(compileOptions\s*\{)',
+                      r'\1\n        coreLibraryDesugaringEnabled true',
+                      content
+                  )
+                  if 'coreLibraryDesugaringEnabled' not in content:
+                      content = re.sub(
+                          r'(android\s*\{)',
+                          r'\1\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n    }',
+                          content, count=1
+                      )
+              if 'coreLibraryDesugaring' not in content:
+                  content += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'\n}\n"
+              with open(gradle_file, 'w') as f:
+                  f.write(content)
+              print('Updated', gradle_file)
+          else:
+              print('No build.gradle file found!')
+              exit(1)
+          EOF
 
       - name: Build APK (debug)
         run: flutter build apk --debug
