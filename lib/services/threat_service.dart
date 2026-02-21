@@ -5,19 +5,44 @@ import '../core/constants/api_constants.dart';
 import '../models/threat.dart';
 import 'api_service.dart';
 
+/// Reponse paginee pour les menaces
+class ThreatsResponse {
+  final List<Threat> items;
+  final int total;
+  final int page;
+  final int pageSize;
+
+  const ThreatsResponse({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
+
+  factory ThreatsResponse.fromJson(Map<String, dynamic> json) {
+    return ThreatsResponse(
+      items: (json['items'] as List<dynamic>)
+          .map((e) => Threat.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      total: json['total'] as int? ?? 0,
+      page: json['page'] as int? ?? 1,
+      pageSize: json['page_size'] as int? ?? 20,
+    );
+  }
+}
+
 /// Provider du service Threats
 final threatServiceProvider = Provider<ThreatService>((ref) {
-  final dio = ref.watch(dioProvider);
-  return ThreatService(dio);
+  final apiService = ref.watch(apiServiceProvider);
+  return ThreatService(apiService);
 });
 
 /// Service pour les menaces/ransomware
 class ThreatService {
-  final Dio _dio;
+  final ApiService _apiService;
+  ThreatService(this._apiService);
 
-  ThreatService(this._dio);
-
-  /// Récupère la liste des menaces avec pagination et filtres
+  /// Recupere la liste des menaces avec pagination et filtres
   Future<ThreatsResponse> getThreats({
     int page = 1,
     int pageSize = 20,
@@ -28,7 +53,7 @@ class ThreatService {
     bool? sortDesc,
   }) async {
     try {
-      final response = await _dio.get(
+      final response = await _apiService.dio.get(
         ApiConstants.threats,
         queryParameters: {
           'page': page,
@@ -47,10 +72,10 @@ class ThreatService {
     }
   }
 
-  /// Récupère le détail d'une menace par son ID
+  /// Recupere le detail d'une menace par son ID
   Future<Threat> getThreatById(String id) async {
     try {
-      final response = await _dio.get(ApiConstants.threatById(id));
+      final response = await _apiService.dio.get(ApiConstants.threatById(id));
       return Threat.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw e.error as ApiException? ??
@@ -58,7 +83,7 @@ class ThreatService {
     }
   }
 
-  /// Récupère les menaces critiques récentes
+  /// Recupere les menaces critiques recentes
   Future<List<Threat>> getCriticalThreats({int limit = 5}) async {
     final response = await getThreats(
       severity: 'critical',
