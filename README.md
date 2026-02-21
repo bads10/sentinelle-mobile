@@ -135,10 +135,10 @@ API_VERSION=v1
 ## Roadmap MVP
 
 - [x] Étape 0 – Initialisation du repo
-- [ ] Étape 1 – Structure Flutter + navigation
-- [ ] Étape 2 – Modèles de données + services API
-- [ ] Étape 3 – Écrans principaux (Home, Threats, Incidents, Feed)
-- [ ] Étape 4 – State management Riverpod
+- [x] Étape 1 – Structure Flutter + navigation
+- [x] Étape 2 – Modèles de données + services API
+- [x] Étape 3 – Écrans principaux (Home, Threats, Incidents, Feed)
+- [x] Étape 4 – State management Riverpod
 - [ ] Étape 5 – Cache offline Hive
 - [ ] Étape 6 – Notifications push
 - [ ] Étape 7 – Tests + CI/CD
