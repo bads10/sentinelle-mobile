@@ -3,22 +3,22 @@ import '../models/stats.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
 
-// AsyncNotifier pour les statistiques avec cache Hive
-class StatsNotifier extends AsyncNotifier<AppStats> {
+// AsyncNotifier pour les statistiques avec cache
+class StatsNotifier extends AsyncNotifier<Stats> {
   static const _cacheKey = 'stats_cache';
 
   @override
-  Future<AppStats> build() async {
+  Future<Stats> build() async {
     return _fetchStats();
   }
 
-  Future<AppStats> _fetchStats() async {
+  Future<Stats> _fetchStats() async {
     final cacheService = ref.read(cacheServiceProvider);
 
     // Retourner le cache si valide
     if (cacheService.isCacheValid(_cacheKey)) {
-      final cached = cacheService.getStats();
-      if (cached != null) return cached;
+      final cachedData = await cacheService.getCachedStats();
+      if (cachedData != null) return Stats.fromJson(cachedData);
     }
 
     // Sinon, fetch depuis l'API
@@ -26,7 +26,8 @@ class StatsNotifier extends AsyncNotifier<AppStats> {
     final stats = await apiService.fetchStats();
 
     // Sauvegarder en cache
-    await cacheService.saveStats(stats);
+    await cacheService.cacheStats(stats.toJson());
+
     return stats;
   }
 
@@ -37,31 +38,16 @@ class StatsNotifier extends AsyncNotifier<AppStats> {
 
   Future<void> clearCache() async {
     final cacheService = ref.read(cacheServiceProvider);
-    await cacheService.clearStats();
+    await cacheService.clearAll();
     await refresh();
   }
 }
 
-final statsProvider = AsyncNotifierProvider<StatsNotifier, AppStats>(
+final statsProvider = AsyncNotifierProvider<StatsNotifier, Stats>(
   StatsNotifier.new,
 );
 
-// Provider pour les stats de menaces
-final threatStatsProvider = Provider<ThreatStats?>((ref) {
-  return ref.watch(statsProvider).valueOrNull?.threats;
-});
-
-// Provider pour les stats d'incidents
-final incidentStatsProvider = Provider<IncidentStats?>((ref) {
-  return ref.watch(statsProvider).valueOrNull?.incidents;
-});
-
-// Provider pour les stats RSS
-final rssStatsProvider = Provider<RssStats?>((ref) {
-  return ref.watch(statsProvider).valueOrNull?.rss;
-});
-
-// Provider d'état de chargement
+// Provider d'etat de chargement
 final isStatsLoadingProvider = Provider<bool>((ref) {
   return ref.watch(statsProvider).isLoading;
 });
@@ -72,12 +58,23 @@ final statsErrorProvider = Provider<String?>((ref) {
   return stats.hasError ? stats.error.toString() : null;
 });
 
-// Provider pour le provider de service API
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService();
+// Provider pour le nombre total de menaces critiques
+final criticalThreatsCountProvider = Provider<int>((ref) {
+  return ref.watch(statsProvider).valueOrNull?.criticalThreats ?? 0;
 });
 
-// Provider pour le cache service
-final cacheServiceProvider = Provider<CacheService>((ref) {
-  return CacheService();
+// Provider pour le nombre total d'incidents a haute severite
+final highSeverityIncidentsCountProvider = Provider<int>((ref) {
+  return ref.watch(statsProvider).valueOrNull?.highSeverityIncidents ?? 0;
+});
+
+// Provider pour les totaux globaux
+final statsTotalsProvider = Provider<Map<String, int>>((ref) {
+  final stats = ref.watch(statsProvider).valueOrNull;
+  if (stats == null) return {};
+  return {
+    'threats': stats.totalThreats,
+    'incidents': stats.totalIncidents,
+    'feed': stats.totalFeedItems,
+  };
 });
