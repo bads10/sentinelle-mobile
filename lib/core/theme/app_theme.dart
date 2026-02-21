@@ -44,7 +44,6 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: backgroundDark,
     fontFamily: 'Inter',
-
     // AppBar
     appBarTheme: const AppBarTheme(
       backgroundColor: surfaceDark,
@@ -59,9 +58,8 @@ class AppTheme {
         letterSpacing: 0.5,
       ),
     ),
-
     // Cards
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: cardDark,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -69,7 +67,6 @@ class AppTheme {
         side: const BorderSide(color: Color(0xFF1E2D4A), width: 1),
       ),
     ),
-
     // Bottom Navigation
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: surfaceDark,
@@ -78,14 +75,12 @@ class AppTheme {
       type: BottomNavigationBarType.fixed,
       elevation: 0,
     ),
-
     // Chips
     chipTheme: ChipThemeData(
       backgroundColor: cardDark,
       labelStyle: const TextStyle(color: textPrimary, fontSize: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
     ),
-
     // Divider
     dividerTheme: const DividerThemeData(
       color: Color(0xFF1E2D4A),
@@ -96,11 +91,16 @@ class AppTheme {
   /// Retourne la couleur selon le niveau de sévérité
   static Color severityColor(String severity) {
     switch (severity.toLowerCase()) {
-      case 'critical': return severityCritical;
-      case 'high': return severityHigh;
-      case 'medium': return severityMedium;
-      case 'low': return severityLow;
-      default: return severityInfo;
+      case 'critical':
+        return severityCritical;
+      case 'high':
+        return severityHigh;
+      case 'medium':
+        return severityMedium;
+      case 'low':
+        return severityLow;
+      default:
+        return severityInfo;
     }
   }
 
