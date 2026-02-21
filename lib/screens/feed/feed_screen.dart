@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/rss_item.dart';
 import '../../providers/rss_provider.dart';
-
 /// Écran Discover / Flux RSS - Style moderne
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
-
   @override
   ConsumerState<FeedScreen> createState() => _FeedScreenState();
 }
-
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   final _searchController = TextEditingController();
   String? _selectedCategory = 'All';
@@ -27,7 +24,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   Widget build(BuildContext context) {
     final feedState = ref.watch(rssNotifierProvider);
     final items = feedState.items;
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -50,9 +46,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               ],
             ),
           ),
-          
-          const SizedBox(height: 24),
 
+          const SizedBox(height: 24),
           // 2. Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -71,9 +66,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
           // 3. Categories
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -92,9 +85,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               }).toList(),
             ),
           ),
-
           const SizedBox(height: 24),
-
           // 4. List of News
           Expanded(
             child: feedState.isLoading
@@ -114,11 +105,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     );
   }
 }
-
 class _DiscoverNewsCard extends StatelessWidget {
   final RssItem item;
   const _DiscoverNewsCard({required this.item});
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -150,15 +139,15 @@ class _DiscoverNewsCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
+              ),
               const SizedBox(height: 12),
-             
+              Row(
                 children: [
                   CircleAvatar(radius: 10, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=orcusium')),
                   const SizedBox(width: 8),
                   Text(item.sourceName ?? 'Sentinelle', style: Theme.of(context).textTheme.labelSmall),
                   const SizedBox(width: 8),
-                  const Text('•', style: TextStyle(color: Colors.grey)),
+                  const Text('\u2022', style: TextStyle(color: Colors.grey)),
                   const SizedBox(width: 8),
                   Text('Feb 27, 2023', style: Theme.of(context).textTheme.labelSmall),
                 ],
