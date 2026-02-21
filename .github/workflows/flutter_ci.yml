@@ -106,5 +106,5 @@ jobs:
       - name: Generate iOS platform files
         run: flutter create --platforms ios .
 
-      - name: Build iOS (no codesign)
-        run: flutter build ios --no-codesign --debug
+      - name: Build iOS (simulator)
+        run: flutter build ios --simulator --debug
