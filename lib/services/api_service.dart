@@ -3,6 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../core/constants/api_constants.dart';
+import '../models/stats.dart';
+
+/// Wrapper du client Dio exposant les methodes API de haut niveau
+class ApiService {
+  final Dio _dio;
+  ApiService(this._dio);
+
+  Dio get dio => _dio;
+
+  /// Recupere les statistiques globales
+  Future<Stats> fetchStats() async {
+    try {
+      final response = await _dio.get(ApiConstants.stats);
+      return Stats.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw e.error as ApiException? ??
+          ApiException(message: e.message ?? 'Erreur inconnue', statusCode: 500);
+    }
+  }
+}
 
 /// Provider du client Dio
 final dioProvider = Provider<Dio>((ref) {
@@ -20,12 +40,15 @@ final dioProvider = Provider<Dio>((ref) {
       },
     ),
   );
-
-  // Intercepteurs
   dio.interceptors.add(LoggingInterceptor());
   dio.interceptors.add(ErrorInterceptor());
-
   return dio;
+});
+
+/// Provider de l'ApiService
+final apiServiceProvider = Provider<ApiService>((ref) {
+  final dio = ref.watch(dioProvider);
+  return ApiService(dio);
 });
 
 /// Intercepteur de logging
@@ -34,19 +57,19 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    _logger.d('[API] ${options.method} ${options.path}');
+    _logger.d('[API] ' + options.method + ' ' + options.path);
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    _logger.d('[API] ${response.statusCode} ${response.requestOptions.path}');
+    _logger.d('[API] ' + (response.statusCode?.toString() ?? '') + ' ' + response.requestOptions.path);
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    _logger.e('[API ERROR] ${err.message}', error: err);
+    _logger.e('[API ERROR] ' + (err.message ?? ''), error: err);
     super.onError(err, handler);
   }
 }
@@ -86,7 +109,7 @@ class ErrorInterceptor extends Interceptor {
         );
       default:
         return ApiException(
-          message: 'Erreur inattendue: ${err.message}',
+          message: 'Erreur inattendue: ' + (err.message ?? ''),
           statusCode: 500,
         );
     }
@@ -94,19 +117,19 @@ class ErrorInterceptor extends Interceptor {
 
   String _messageFromStatus(int status) {
     switch (status) {
-      case 400: return 'Requête invalide';
-      case 401: return 'Non autorisé';
-      case 403: return 'Accès refusé';
+      case 400: return 'Requete invalide';
+      case 401: return 'Non autorise';
+      case 403: return 'Acces refuse';
       case 404: return 'Ressource introuvable';
-      case 429: return 'Trop de requêtes';
+      case 429: return 'Trop de requetes';
       case 500: return 'Erreur interne du serveur';
       case 503: return 'Service indisponible';
-      default: return 'Erreur HTTP $status';
+      default: return 'Erreur HTTP ' + status.toString();
     }
   }
 }
 
-/// Exception API structurée
+/// Exception API structuree
 class ApiException implements Exception {
   final String message;
   final int statusCode;
@@ -117,5 +140,5 @@ class ApiException implements Exception {
   });
 
   @override
-  String toString() => 'ApiException($statusCode): $message';
+  String toString() => 'ApiException(' + statusCode.toString() + '): ' + message;
 }
