@@ -2,9 +2,10 @@
 
 > Application mobile Flutter – Veille cybersécurité temps réel. MVP Sentinelle.
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-blue?logo=dart)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.x-blue?logo=dart)](https://dart.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/bads10/sentinelle-mobile/actions/workflows/flutter_ci.yml/badge.svg)](https://github.com/bads10/sentinelle-mobile/actions/workflows/flutter_ci.yml)
 
 ---
 
@@ -23,34 +24,42 @@
 
 ```
 sentinelle-mobile/
+├── .github/
+│   └── workflows/
+│       └── flutter_ci.yml      # CI/CD GitHub Actions
 ├── lib/
-│   ├── main.dart                  # Point d'entrée
-│   ├── app.dart                   # Configuration app + thème
+│   ├── main.dart               # Point d'entrée
+│   ├── app.dart                # Configuration app + thème
 │   ├── core/
 │   │   ├── constants/
-│   │   │   ├── api_constants.dart # URLs API, endpoints
-│   │   │   └── app_constants.dart # Constantes globales
+│   │   │   ├── api_constants.dart
+│   │   │   └── app_constants.dart
 │   │   ├── theme/
-│   │   │   └── app_theme.dart     # Thème dark cybersécurité
+│   │   │   └── app_theme.dart
 │   │   └── routes/
-│   │       └── app_routes.dart    # Navigation routes
+│   │       └── app_routes.dart
 │   ├── models/
-│   │   ├── threat.dart            # Modèle Threat/Ransomware
-│   │   ├── incident.dart          # Modèle Incident CVE
-│   │   ├── rss_item.dart          # Modèle flux RSS
-│   │   └── stats.dart             # Modèle statistiques
+│   │   ├── threat.dart
+│   │   ├── incident.dart
+│   │   ├── rss_item.dart
+│   │   └── stats.dart
 │   ├── services/
-│   │   ├── api_service.dart       # Client HTTP Dio
-│   │   ├── threat_service.dart    # Service threats
-│   │   ├── incident_service.dart  # Service incidents
-│   │   └── rss_service.dart       # Service RSS
+│   │   ├── api_service.dart
+│   │   ├── threat_service.dart
+│   │   ├── incident_service.dart
+│   │   ├── rss_service.dart
+│   │   ├── cache_service.dart      # Cache Hive TTL
+│   │   └── notification_service.dart # Push locales Android/iOS
 │   ├── providers/
-│   │   ├── threat_provider.dart   # State threats (Riverpod)
-│   │   ├── incident_provider.dart # State incidents
-│   │   └── rss_provider.dart      # State RSS
+│   │   ├── threat_provider.dart
+│   │   ├── incident_provider.dart
+│   │   ├── rss_provider.dart
+│   │   ├── stats_provider.dart
+│   │   ├── cache_provider.dart     # StateNotifier cache
+│   │   └── notification_provider.dart # StateNotifier notifications
 │   ├── screens/
 │   │   ├── home/
-│   │   │   └── home_screen.dart   # Écran principal
+│   │   │   └── home_screen.dart
 │   │   ├── threats/
 │   │   │   ├── threats_screen.dart
 │   │   │   └── threat_detail_screen.dart
@@ -58,19 +67,23 @@ sentinelle-mobile/
 │   │   │   ├── incidents_screen.dart
 │   │   │   └── incident_detail_screen.dart
 │   │   └── feed/
-│   │       └── feed_screen.dart   # Flux RSS
+│   │       └── feed_screen.dart
 │   └── widgets/
-│       ├── threat_card.dart       # Carte menace
-│       ├── incident_card.dart     # Carte incident
-│       ├── rss_card.dart          # Carte article RSS
-│       ├── severity_badge.dart    # Badge sévérité
-│       └── stats_widget.dart      # Widget statistiques
+│       ├── threat_card.dart
+│       ├── incident_card.dart
+│       ├── rss_card.dart
+│       ├── severity_badge.dart
+│       └── stats_widget.dart
+├── test/
+│   ├── models/
+│   │   ├── threat_test.dart
+│   │   └── incident_test.dart
+│   └── providers/
+│       └── notification_state_test.dart
 ├── pubspec.yaml
 ├── .gitignore
 └── README.md
 ```
-
----
 
 ## Stack technique
 
@@ -82,27 +95,24 @@ sentinelle-mobile/
 | Dio | Client HTTP |
 | Go Router | Navigation |
 | Freezed | Modèles immutables |
-| Hive | Cache local |
+| Hive | Cache local offline |
+| flutter_local_notifications | Notifications push locales |
 | fl_chart | Graphiques statistiques |
 | intl | Internationalisation |
-
----
 
 ## Backend API
 
 Consomme `sentinelle-backend` en FastAPI :
 
 ```
-GET /api/v1/threats/          # Liste des menaces
-GET /api/v1/threats/{id}      # Détail menace
-GET /api/v1/incidents/        # Liste incidents CVE
-GET /api/v1/incidents/{id}    # Détail incident
-GET /api/v1/feed/             # Flux RSS
-GET /api/v1/stats/            # Statistiques globales
-GET /health                   # Health check
+GET /api/v1/threats/       # Liste des menaces
+GET /api/v1/threats/{id}   # Détail menace
+GET /api/v1/incidents/     # Liste incidents CVE
+GET /api/v1/incidents/{id} # Détail incident
+GET /api/v1/feed/          # Flux RSS
+GET /api/v1/stats/         # Statistiques globales
+GET /health                # Health check
 ```
-
----
 
 ## Installation
 
@@ -117,7 +127,7 @@ flutter pub get
 # Générer les fichiers Freezed
 flutter pub run build_runner build --delete-conflicting-outputs
 
-# Lancer l'app (émulateur/device connecté)
+# Lancer l'app (simulateur/device connecté)
 flutter run
 ```
 
@@ -125,12 +135,23 @@ flutter run
 
 Copier `.env.example` vers `.env` :
 
-```
+```env
 API_BASE_URL=http://localhost:8000
 API_VERSION=v1
 ```
 
----
+## Tests
+
+```bash
+# Lancer tous les tests
+flutter test
+
+# Avec couverture de code
+flutter test --coverage
+
+# Analyse statique
+flutter analyze
+```
 
 ## Roadmap MVP
 
@@ -139,16 +160,12 @@ API_VERSION=v1
 - [x] Étape 2 – Modèles de données + services API
 - [x] Étape 3 – Écrans principaux (Home, Threats, Incidents, Feed)
 - [x] Étape 4 – State management Riverpod
-- [ ] Étape 5 – Cache offline Hive
-- [ ] Étape 6 – Notifications push
-- [ ] Étape 7 – Tests + CI/CD
-
----
+- [x] Étape 5 – Cache offline Hive
+- [x] Étape 6 – Notifications push
+- [x] Étape 7 – Tests + CI/CD
 
 ## Licence
 
 MIT – voir [LICENSE](LICENSE)
 
----
-
-*Projet Sentinelle – Veille cybersécurité automatisée*
+> Projet Sentinelle – Veille cybersécurité automatisée
