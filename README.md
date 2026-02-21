@@ -163,6 +163,7 @@ flutter analyze
 - [x] Étape 5 – Cache offline Hive
 - [x] Étape 6 – Notifications push
 - [x] Étape 7 – Tests + CI/CD
+- [x] Étape 8 – Qualité, sécurité, conformité (PII, retry, rate-limit, store-friendly)
 
 ## Licence
 
