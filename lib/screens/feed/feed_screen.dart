@@ -23,14 +23,33 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final feedAsync = ref.watch(rssFeedProvider);
+    final feedState = ref.watch(rssNotifierProvider);
+    final items = feedState.items;
+
+    // Filtrage
+    final sources = items
+        .map((i) => i.sourceName ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final filtered = items.where((item) {
+      final matchesSource =
+          _selectedSource == null || (item.sourceName ?? '') == _selectedSource;
+      final matchesSearch = _searchController.text.isEmpty ||
+          item.title
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase());
+      return matchesSource && matchesSearch;
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flux RSS Cybersécurité'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(rssFeedProvider),
+            onPressed: () => ref.invalidate(rssNotifierProvider),
           ),
         ],
       ),
@@ -61,92 +80,71 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             ),
           ),
           // Filtres par source
-          feedAsync.when(
-            data: (items) {
-              final sources = items
-                  .map((i) => i.sourceName ?? '')
-                  .where((s) => s.isNotEmpty)
-                  .toSet()
-                  .toList();
-              if (sources.isEmpty) return const SizedBox.shrink();
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('Toutes'),
-                      selected: _selectedSource == null,
-                      onSelected: (_) =>
-                          setState(() => _selectedSource = null),
-                    ),
-                    const SizedBox(width: 8),
-                    ...sources.map(
-                      (s) => Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: FilterChip(
-                          label: Text(s),
-                          selected: _selectedSource == s,
-                          onSelected: (_) => setState(
-                            () => _selectedSource =
-                                _selectedSource == s ? null : s,
-                          ),
+          if (sources.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: const Text('Toutes'),
+                    selected: _selectedSource == null,
+                    onSelected: (_) =>
+                        setState(() => _selectedSource = null),
+                  ),
+                  const SizedBox(width: 8),
+                  ...sources.map(
+                    (s) => Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: FilterChip(
+                        label: Text(s),
+                        selected: _selectedSource == s,
+                        onSelected: (_) => setState(
+                          () => _selectedSource =
+                              _selectedSource == s ? null : s,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           // Liste des articles
           Expanded(
-            child: feedAsync.when(
-              data: (items) {
-                final filtered = items.where((item) {
-                  final matchesSource = _selectedSource == null ||
-                      (item.sourceName ?? '') == _selectedSource;
-                  final matchesSearch = _searchController.text.isEmpty ||
-                      item.title
-                          .toLowerCase()
-                          .contains(_searchController.text.toLowerCase());
-                  return matchesSource && matchesSearch;
-                }).toList();
-                if (filtered.isEmpty) {
-                  return const Center(
-                    child: Text('Aucun article correspondant'),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(rssFeedProvider),
-                  child: ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      return _RssCard(item: filtered[index]);
-                    },
-                  ),
-                );
-              },
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error, color: Colors.red, size: 48),
-                    const SizedBox(height: 8),
-                    Text('Erreur: ${e.toString()}'),
-                    TextButton(
-                      onPressed: () => ref.invalidate(rssFeedProvider),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: feedState.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : feedState.error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error,
+                                color: Colors.red, size: 48),
+                            const SizedBox(height: 8),
+                            Text('Erreur: ${feedState.error}'),
+                            TextButton(
+                              onPressed: () =>
+                                  ref.invalidate(rssNotifierProvider),
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : filtered.isEmpty
+                        ? const Center(
+                            child: Text('Aucun article correspondant'),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () async =>
+                                ref.invalidate(rssNotifierProvider),
+                            child: ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                return _RssCard(item: filtered[index]);
+                              },
+                            ),
+                          ),
           ),
         ],
       ),
@@ -172,16 +170,16 @@ class _RssCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     item.sourceName ?? '',
-                    style:
-                        const TextStyle(color: Colors.green, fontSize: 11),
+                    style: const TextStyle(
+                        color: Colors.green, fontSize: 11),
                   ),
                 ),
                 if (item.publishedAt.isNotEmpty)
@@ -202,7 +200,8 @@ class _RssCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             // Description
-            if (item.description != null && item.description!.isNotEmpty) ...[
+            if (item.description != null &&
+                item.description!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
                 item.description!,
@@ -220,8 +219,8 @@ class _RssCard extends StatelessWidget {
                     .take(3)
                     .map(
                       (tag) => Chip(
-                        label:
-                            Text(tag, style: const TextStyle(fontSize: 10)),
+                        label: Text(tag,
+                            style: const TextStyle(fontSize: 10)),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                       ),
