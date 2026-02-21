@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/rss_item.dart';
 import '../../providers/rss_provider.dart';
 
-/// Écran flux RSS cybersécurité
+/// Écran Discover / Flux RSS - Style moderne
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
 
@@ -13,7 +13,9 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   final _searchController = TextEditingController();
-  String? _selectedSource;
+  String? _selectedCategory = 'All';
+
+  final List<String> _categories = ['All', 'Politic', 'Sport', 'Education', 'Game'];
 
   @override
   void dispose() {
@@ -26,125 +28,86 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final feedState = ref.watch(rssNotifierProvider);
     final items = feedState.items;
 
-    // Filtrage
-    final sources = items
-        .map((i) => i.sourceName ?? '')
-        .where((s) => s.isNotEmpty)
-        .toSet()
-        .toList();
-
-    final filtered = items.where((item) {
-      final matchesSource =
-          _selectedSource == null || (item.sourceName ?? '') == _selectedSource;
-      final matchesSearch = _searchController.text.isEmpty ||
-          item.title
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase());
-      return matchesSource && matchesSearch;
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flux RSS Cybersécurité'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(rssNotifierProvider),
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Barre de recherche
+          // 1. Title
           Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un article...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (_) => setState(() {}),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Discover', style: Theme.of(context).textTheme.displayLarge),
+                const SizedBox(height: 4),
+                Text('News from all around the world', style: Theme.of(context).textTheme.bodySmall),
+              ],
             ),
           ),
-          // Filtres par source
-          if (sources.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Row(
-                children: [
-                  FilterChip(
-                    label: const Text('Toutes'),
-                    selected: _selectedSource == null,
-                    onSelected: (_) =>
-                        setState(() => _selectedSource = null),
-                  ),
-                  const SizedBox(width: 8),
-                  ...sources.map(
-                    (s) => Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: FilterChip(
-                        label: Text(s),
-                        selected: _selectedSource == s,
-                        onSelected: (_) => setState(
-                          () => _selectedSource =
-                              _selectedSource == s ? null : s,
-                        ),
-                      ),
+          
+          const SizedBox(height: 24),
+
+          // 2. Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: const Icon(Icons.tune, color: Colors.grey),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          const SizedBox(height: 8),
-          // Liste des articles
+          ),
+
+          const SizedBox(height: 24),
+
+          // 3. Categories
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: _categories.map((cat) {
+                final isSelected = _selectedCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: ChoiceChip(
+                    label: Text(cat),
+                    selected: isSelected,
+                    onSelected: (val) => setState(() => _selectedCategory = cat),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 4. List of News
           Expanded(
             child: feedState.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : feedState.error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error,
-                                color: Colors.red, size: 48),
-                            const SizedBox(height: 8),
-                            Text('Erreur: ${feedState.error}'),
-                            TextButton(
-                              onPressed: () =>
-                                  ref.invalidate(rssNotifierProvider),
-                              child: const Text('Réessayer'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : filtered.isEmpty
-                        ? const Center(
-                            child: Text('Aucun article correspondant'),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () async =>
-                                ref.invalidate(rssNotifierProvider),
-                            child: ListView.builder(
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) {
-                                return _RssCard(item: filtered[index]);
-                              },
-                            ),
-                          ),
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 24),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _DiscoverNewsCard(item: item);
+                    },
+                  ),
           ),
         ],
       ),
@@ -152,85 +115,58 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 }
 
-class _RssCard extends StatelessWidget {
+class _DiscoverNewsCard extends StatelessWidget {
   final RssItem item;
-  const _RssCard({required this.item});
+  const _DiscoverNewsCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Source et date
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    item.sourceName ?? '',
-                    style: const TextStyle(
-                        color: Colors.green, fontSize: 11),
-                  ),
-                ),
-                if (item.publishedAt.isNotEmpty)
-                  Text(
-                    item.publishedAt,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Titre
-            Text(
-              item.title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            // Description
-            if (item.description != null &&
-                item.description!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                item.description!,
-                style: Theme.of(context).textTheme.bodySmall,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            // Tags
-            if (item.tags.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                children: item.tags
-                    .take(3)
-                    .map(
-                      (tag) => Chip(
-                        label: Text(tag,
-                            style: const TextStyle(fontSize: 10)),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Image
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.network(
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=200&auto=format&fit=crop',
+            width: 110,
+            height: 110,
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
+        const SizedBox(width: 16),
+        // Content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sports', // Category placeholder
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              )
+              const SizedBox(height: 12),
+             
+                children: [
+                  CircleAvatar(radius: 10, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=orcusium')),
+                  const SizedBox(width: 8),
+                  Text(item.sourceName ?? 'Sentinelle', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(width: 8),
+                  const Text('•', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(width: 8),
+                  Text('Feb 27, 2023', style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
