@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/incident.dart';
 import '../../providers/incident_provider.dart';
 
@@ -24,7 +25,7 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final incidentsAsync = ref.watch(incidentsProvider);
+    final incidentState = ref.watch(incidentNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +33,7 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(incidentsProvider),
+            onPressed: () => ref.read(incidentNotifierProvider.notifier).loadIncidents(refresh: true),
           ),
         ],
       ),
@@ -62,7 +63,6 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-
           // Filtre score CVSS minimum
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -82,16 +82,34 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
               ],
             ),
           ),
-
           // Liste des incidents
           Expanded(
-            child: incidentsAsync.when(
-              data: (incidents) {
-                final filtered = incidents.where((i) {
+            child: Builder(
+              builder: (context) {
+                if (incidentState.isLoading && incidentState.incidents.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (incidentState.error != null && incidentState.incidents.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error, color: Colors.red, size: 48),
+                        const SizedBox(height: 8),
+                        Text('Erreur: ${incidentState.error}'),
+                        TextButton(
+                          onPressed: () => ref.read(incidentNotifierProvider.notifier).loadIncidents(refresh: true),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final filtered = incidentState.incidents.where((i) {
                   final matchesSearch = _searchController.text.isEmpty ||
                       i.cveId.toLowerCase()
                           .contains(_searchController.text.toLowerCase()) ||
-                      i.description.toLowerCase()
+                      i.summary.toLowerCase()
                           .contains(_searchController.text.toLowerCase());
                   final matchesCvss = _minCvssScore == 0.0 ||
                       (i.cvssScore != null && i.cvssScore! >= _minCvssScore);
@@ -105,38 +123,19 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
                 }
 
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(incidentsProvider),
+                  onRefresh: () async => ref.read(incidentNotifierProvider.notifier).loadIncidents(refresh: true),
                   child: ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final incident = filtered[index];
                       return _IncidentCard(
                         incident: incident,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/incidents/detail',
-                          arguments: incident,
-                        ),
+                        onTap: () => context.push('/incidents/${incident.id}'),
                       );
                     },
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error, color: Colors.red, size: 48),
-                    const SizedBox(height: 8),
-                    Text('Erreur: ${e.toString()}'),
-                    TextButton(
-                      onPressed: () => ref.invalidate(incidentsProvider),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
         ],
@@ -181,13 +180,13 @@ class _IncidentCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          incident.description,
+          incident.summary,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: incident.publishedDate != null
+        trailing: incident.publishedAt.isNotEmpty
             ? Text(
-                '${incident.publishedDate!.day}/${incident.publishedDate!.month}',
+                incident.publishedAt,
                 style: Theme.of(context).textTheme.bodySmall,
               )
             : null,
