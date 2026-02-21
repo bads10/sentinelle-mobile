@@ -1,13 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/rss_item.dart';
 import '../services/rss_service.dart';
-import '../services/api_service.dart';
-
-// Provider for RssService
-final rssServiceProvider = Provider<RssService>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  return RssService(apiService);
-});
 
 // State class for RSS feed
 class RssState {
@@ -49,22 +42,19 @@ class RssState {
 // RssNotifier
 class RssNotifier extends StateNotifier<RssState> {
   final RssService _rssService;
-
   RssNotifier(this._rssService) : super(const RssState());
 
   Future<void> loadFeed({bool refresh = false}) async {
     if (state.isLoading) return;
-
     if (refresh) {
       state = const RssState(isLoading: true);
     } else {
       state = state.copyWith(isLoading: true, error: null);
     }
-
     try {
       final page = refresh ? 1 : state.currentPage;
-      final newItems = await _rssService.getFeed(page: page);
-
+      final response = await _rssService.getFeed(page: page);
+      final newItems = response.items;
       if (refresh) {
         state = RssState(
           items: newItems,
