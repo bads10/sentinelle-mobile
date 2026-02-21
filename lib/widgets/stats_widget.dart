@@ -49,7 +49,7 @@ class StatsWidget extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   label: 'Critiques',
-                  value: stats.criticalCount.toString(),
+                  value: stats.criticalThreats.toString(),
                   icon: Icons.gpp_bad_outlined,
                   color: const Color(0xFFD50000),
                 ),
@@ -58,7 +58,7 @@ class StatsWidget extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   label: 'Articles RSS',
-                  value: stats.totalFeeds.toString(),
+                  value: stats.totalFeedItems.toString(),
                   icon: Icons.rss_feed,
                   color: const Color(0xFF00BCD4),
                 ),
