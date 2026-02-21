@@ -1,5 +1,7 @@
 name: sentinelle_mobile
-description: Application mobile Flutter - Veille cybersécurité temps réel (ransomware, incidents, flux RSS). MVP Sentinelle.
+description: >-
+  Sentinelle - Application mobile de veille cybersécurité temps réel
+  (ransomware, incidents, flux RSS). Développée par Orcusium (hello@orcusium.fr).
 publish_to: 'none'
 version: 0.1.0+1
 
