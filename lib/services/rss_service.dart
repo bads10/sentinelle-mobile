@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/rss_item.dart';
 import '../core/constants/api_constants.dart';
 import 'api_service.dart';
 
-/// Réponse paginée pour les articles RSS
+/// Reponse paginee pour les articles RSS
 class RssFeedResponse {
   final List<RssItem> items;
   final int total;
@@ -29,14 +30,18 @@ class RssFeedResponse {
   }
 }
 
-/// Service pour les flux RSS cybersécurité via l'API Sentinelle
+/// Provider du service RSS
+final rssServiceProvider = Provider<RssService>((ref) {
+  final apiService = ref.watch(apiServiceProvider);
+  return RssService(apiService);
+});
+
+/// Service pour les flux RSS cybersecurite via l'API Sentinelle
 class RssService {
   final ApiService _apiService;
+  RssService(this._apiService);
 
-  RssService({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
-
-  /// Récupère le flux RSS paginé
+  /// Recupere le flux RSS pagine
   Future<RssFeedResponse> getFeed({
     int page = 1,
     int pageSize = 20,
@@ -58,11 +63,11 @@ class RssService {
       return RssFeedResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw e.error as ApiException? ??
-          ApiException(message: e.message ?? 'Erreur inconnue');
+          ApiException(message: e.message ?? 'Erreur inconnue', statusCode: 500);
     }
   }
 
-  /// Récupère le détail d'un article RSS par ID
+  /// Recupere le detail d'un article RSS par ID
   Future<RssItem> getFeedItemById(String id) async {
     try {
       final response = await _apiService.dio.get(
@@ -71,11 +76,11 @@ class RssService {
       return RssItem.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw e.error as ApiException? ??
-          ApiException(message: e.message ?? 'Erreur inconnue');
+          ApiException(message: e.message ?? 'Erreur inconnue', statusCode: 500);
     }
   }
 
-  /// Récupère les derniers articles RSS (tri par date)
+  /// Recupere les derniers articles RSS (tri par date)
   Future<List<RssItem>> getLatestArticles({int limit = 20}) async {
     final response = await getFeed(
       pageSize: limit,
@@ -83,7 +88,7 @@ class RssService {
     return response.items;
   }
 
-  /// Récupère les articles par source (ex: 'krebs', 'hackernews')
+  /// Recupere les articles par source (ex: 'krebs', 'hackernews')
   Future<List<RssItem>> getArticlesBySource(String source, {int limit = 20}) async {
     final response = await getFeed(
       source: source,
