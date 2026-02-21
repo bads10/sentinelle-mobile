@@ -1,13 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident.dart';
 import '../services/incident_service.dart';
-import '../services/api_service.dart';
-
-// Provider for IncidentService
-final incidentServiceProvider = Provider<IncidentService>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  return IncidentService(apiService);
-});
 
 // State class for incidents
 class IncidentState {
@@ -49,22 +42,19 @@ class IncidentState {
 // IncidentNotifier
 class IncidentNotifier extends StateNotifier<IncidentState> {
   final IncidentService _incidentService;
-
   IncidentNotifier(this._incidentService) : super(const IncidentState());
 
   Future<void> loadIncidents({bool refresh = false}) async {
     if (state.isLoading) return;
-
     if (refresh) {
       state = const IncidentState(isLoading: true);
     } else {
       state = state.copyWith(isLoading: true, error: null);
     }
-
     try {
       final page = refresh ? 1 : state.currentPage;
-      final newIncidents = await _incidentService.getIncidents(page: page);
-
+      final response = await _incidentService.getIncidents(page: page);
+      final newIncidents = response.items;
       if (refresh) {
         state = IncidentState(
           incidents: newIncidents,
