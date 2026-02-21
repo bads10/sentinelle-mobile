@@ -3,10 +3,10 @@ import '../services/cache_service.dart';
 
 // Provider for CacheService singleton
 final cacheServiceProvider = Provider<CacheService>((ref) {
-  return CacheService();
+  return CacheService.instance;
 });
 
-// CacheStatusNotifier: expose l'état du cache (validité TTL)
+// CacheStatusNotifier: expose l'etat du cache (validite TTL)
 class CacheStatusNotifier extends StateNotifier<CacheStatusState> {
   final CacheService _cache;
 
@@ -23,12 +23,12 @@ class CacheStatusNotifier extends StateNotifier<CacheStatusState> {
 
   Future<void> clearAll() async {
     await _cache.clearAll();
-    refresh();
+    await refresh();
   }
 
   Future<void> clearThreats() async {
     await _cache.clearThreats();
-    refresh();
+    await refresh();
   }
 }
 
@@ -55,7 +55,7 @@ final isStatsCachedProvider = Provider<bool>((ref) {
   return ref.watch(cacheStatusProvider).statsValid;
 });
 
-// État du cache (immutable)
+// Etat du cache (immutable)
 class CacheStatusState {
   final bool threatsValid;
   final bool incidentsValid;
