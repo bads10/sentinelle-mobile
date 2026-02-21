@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/stats.dart';
 import '../services/api_service.dart';
-import '../services/cache_service.dart';
+import 'cache_provider.dart';
 
 // AsyncNotifier pour les statistiques avec cache
 class StatsNotifier extends AsyncNotifier<Stats> {
