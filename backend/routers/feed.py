@@ -15,12 +15,30 @@ router = APIRouter()
 
 # Sources RSS cybersécurité
 RSS_SOURCES = [
-    {"name": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/"},
-    {"name": "The Hacker News",   "url": "https://feeds.feedburner.com/TheHackersNews"},
-    {"name": "BleepingComputer",  "url": "https://www.bleepingcomputer.com/feed/"},
-    {"name": "CERT-FR",           "url": "https://www.cert.ssi.gouv.fr/feed/"},
+    # Actualités générales
+    {"name": "Krebs on Security",    "url": "https://krebsonsecurity.com/feed/"},
+    {"name": "The Hacker News",      "url": "https://feeds.feedburner.com/TheHackersNews"},
+    {"name": "BleepingComputer",     "url": "https://www.bleepingcomputer.com/feed/"},
     {"name": "Schneier on Security", "url": "https://www.schneier.com/feed/atom/"},
-    {"name": "Dark Reading",      "url": "https://www.darkreading.com/rss.xml"},
+    {"name": "Dark Reading",         "url": "https://www.darkreading.com/rss.xml"},
+    {"name": "SecurityWeek",         "url": "https://feeds.feedburner.com/securityweek"},
+    {"name": "Threatpost",           "url": "https://threatpost.com/feed/"},
+    {"name": "Naked Security",       "url": "https://nakedsecurity.sophos.com/feed/"},
+    {"name": "Graham Cluley",        "url": "https://grahamcluley.com/feed/"},
+    {"name": "Cyber Defense Mag",    "url": "https://www.cyberdefensemagazine.com/feed/"},
+    # Threat intelligence
+    {"name": "SANS Internet Storm",  "url": "https://isc.sans.edu/rssfeed_full.xml"},
+    {"name": "Recorded Future",      "url": "https://www.recordedfuture.com/feed"},
+    {"name": "Mandiant",             "url": "https://www.mandiant.com/resources/blog/rss.xml"},
+    {"name": "Malwarebytes Labs",    "url": "https://www.malwarebytes.com/blog/feed/"},
+    {"name": "Cisco Talos",          "url": "https://blog.talosintelligence.com/feeds/posts/default"},
+    # CERT / gouvernementaux
+    {"name": "CERT-FR",              "url": "https://www.cert.ssi.gouv.fr/feed/"},
+    {"name": "US-CERT CISA",        "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"},
+    {"name": "ENISA",                "url": "https://www.enisa.europa.eu/news/rss"},
+    # Vulnérabilités
+    {"name": "Rapid7",               "url": "https://blog.rapid7.com/rss/"},
+    {"name": "Qualys Blog",          "url": "https://blog.qualys.com/feed"},
 ]
 
 # Cache simple en mémoire (TTL 10 min)
