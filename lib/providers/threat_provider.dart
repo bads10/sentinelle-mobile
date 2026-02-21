@@ -1,13 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/threat.dart';
 import '../services/threat_service.dart';
-import '../services/api_service.dart';
-
-// Provider for ThreatService
-final threatServiceProvider = Provider<ThreatService>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  return ThreatService(apiService);
-});
 
 // State class for threats
 class ThreatState {
@@ -45,22 +38,19 @@ class ThreatState {
 // ThreatNotifier
 class ThreatNotifier extends StateNotifier<ThreatState> {
   final ThreatService _threatService;
-
   ThreatNotifier(this._threatService) : super(const ThreatState());
 
   Future<void> loadThreats({bool refresh = false}) async {
     if (state.isLoading) return;
-
     if (refresh) {
       state = const ThreatState(isLoading: true);
     } else {
       state = state.copyWith(isLoading: true, error: null);
     }
-
     try {
       final page = refresh ? 1 : state.currentPage;
-      final newThreats = await _threatService.getThreats(page: page);
-
+      final response = await _threatService.getThreats(page: page);
+      final newThreats = response.items;
       if (refresh) {
         state = ThreatState(
           threats: newThreats,
