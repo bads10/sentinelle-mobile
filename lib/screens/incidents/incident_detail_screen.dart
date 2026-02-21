@@ -1,11 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/incident.dart';
+import '../../providers/incident_provider.dart';
 
 /// Écran détail d'un incident CVE
-class IncidentDetailScreen extends StatelessWidget {
+class IncidentDetailScreen extends ConsumerWidget {
+  final String incidentId;
+
+  const IncidentDetailScreen({super.key, required this.incidentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final incidentAsync = ref.watch(incidentDetailProvider(incidentId));
+
+    return incidentAsync.when(
+      data: (incident) => _IncidentDetailContent(incident: incident),
+      loading: () => Scaffold(
+        appBar: AppBar(leading: const BackButton()),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(leading: const BackButton()),
+        body: Center(child: Text('Erreur: ${e.toString()}')),
+      ),
+    );
+  }
+}
+
+class _IncidentDetailContent extends StatelessWidget {
   final Incident incident;
 
-  const IncidentDetailScreen({super.key, required this.incident});
+  const _IncidentDetailContent({required this.incident});
 
   Color _cvssColor(double? score) {
     if (score == null) return Colors.grey;
@@ -72,8 +97,8 @@ class IncidentDetailScreen extends StatelessWidget {
                           Text(
                             incident.cveId,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -98,81 +123,79 @@ class IncidentDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Description
+            // Description / Résumé
             _buildSection(
               context,
               title: 'Description',
               children: [
                 Text(
-                  incident.description,
+                  incident.summary,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Métriques CVSS
+            // Métriques
             _buildSection(
               context,
               title: 'Métriques',
               children: [
                 if (incident.cvssScore != null)
                   _buildInfoRow(context, 'Score CVSS', incident.cvssScore!.toStringAsFixed(1)),
-                if (incident.cvssVector != null)
-                  _buildInfoRow(context, 'Vecteur CVSS', incident.cvssVector!),
-                if (incident.publishedDate != null)
-                  _buildInfoRow(
-                    context,
-                    'Publié le',
-                    '${incident.publishedDate!.day}/${incident.publishedDate!.month}/${incident.publishedDate!.year}',
-                  ),
-                if (incident.lastModifiedDate != null)
-                  _buildInfoRow(
-                    context,
-                    'Modifié le',
-                    '${incident.lastModifiedDate!.day}/${incident.lastModifiedDate!.month}/${incident.lastModifiedDate!.year}',
-                  ),
+                _buildInfoRow(context, 'Sévérité', incident.severity),
+                if (incident.publishedAt.isNotEmpty)
+                  _buildInfoRow(context, 'Publié le', incident.publishedAt),
+                if (incident.updatedAt.isNotEmpty)
+                  _buildInfoRow(context, 'Mis à jour', incident.updatedAt),
+                if (incident.vendor != null)
+                  _buildInfoRow(context, 'Fournisseur', incident.vendor!),
+                if (incident.patchUrl != null)
+                  _buildInfoRow(context, 'Patch URL', incident.patchUrl!),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Logiciels affectés
-            if (incident.affectedSoftware != null && incident.affectedSoftware!.isNotEmpty) ...
-              [
-                _buildSection(
-                  context,
-                  title: 'Logiciels affectés',
-                  children: incident.affectedSoftware!
-                      .map((sw) => _buildInfoRow(context, sw['vendor'] ?? '', sw['product'] ?? ''))
-                      .toList(),
-                ),
-                const SizedBox(height: 16),
-              ],
-
+            // Produits affectés
+            if (incident.affectedProducts.isNotEmpty) ...[
+              _buildSection(
+                context,
+                title: 'Produits affectés',
+                children: incident.affectedProducts
+                    .map((p) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.chevron_right, size: 16),
+                              const SizedBox(width: 4),
+                              Text(p, style: Theme.of(context).textTheme.bodyMedium),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
             // Références
-            if (incident.references != null && incident.references!.isNotEmpty) ...
-              [
-                Text(
-                  'Références',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+            if (incident.references.isNotEmpty) ...[
+              Text(
+                'Références',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const Divider(),
-                ...incident.references!.map(
-                  (ref) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Text(
-                      ref,
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
+              ),
+              const Divider(),
+              ...incident.references.map(
+                (ref) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: Text(
+                    ref,
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
-              ],
+              ),
+            ],
           ],
         ),
       ),
@@ -190,8 +213,8 @@ class IncidentDetailScreen extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const Divider(),
         ...children,
@@ -210,8 +233,8 @@ class IncidentDetailScreen extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
+                color: Colors.grey,
+              ),
             ),
           ),
           Expanded(
