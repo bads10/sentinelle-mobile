@@ -24,7 +24,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     final feedAsync = ref.watch(rssFeedProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flux RSS Cybersécurité'),
@@ -61,11 +60,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-
           // Filtres par source
           feedAsync.when(
             data: (items) {
-              final sources = items.map((i) => i.source).toSet().toList();
+              final sources = items
+                  .map((i) => i.sourceName ?? '')
+                  .where((s) => s.isNotEmpty)
+                  .toSet()
+                  .toList();
               if (sources.isEmpty) return const SizedBox.shrink();
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -75,7 +77,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                     FilterChip(
                       label: const Text('Toutes'),
                       selected: _selectedSource == null,
-                      onSelected: (_) => setState(() => _selectedSource = null),
+                      onSelected: (_) =>
+                          setState(() => _selectedSource = null),
                     ),
                     const SizedBox(width: 8),
                     ...sources.map(
@@ -85,7 +88,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                           label: Text(s),
                           selected: _selectedSource == s,
                           onSelected: (_) => setState(
-                            () => _selectedSource = _selectedSource == s ? null : s,
+                            () => _selectedSource =
+                                _selectedSource == s ? null : s,
                           ),
                         ),
                       ),
@@ -97,28 +101,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
           ),
-
           const SizedBox(height: 8),
-
           // Liste des articles
           Expanded(
             child: feedAsync.when(
               data: (items) {
                 final filtered = items.where((item) {
                   final matchesSource = _selectedSource == null ||
-                      item.source == _selectedSource;
+                      (item.sourceName ?? '') == _selectedSource;
                   final matchesSearch = _searchController.text.isEmpty ||
-                      item.title.toLowerCase()
+                      item.title
+                          .toLowerCase()
                           .contains(_searchController.text.toLowerCase());
                   return matchesSource && matchesSearch;
                 }).toList();
-
                 if (filtered.isEmpty) {
                   return const Center(
                     child: Text('Aucun article correspondant'),
                   );
                 }
-
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(rssFeedProvider),
                   child: ListView.builder(
@@ -129,7 +130,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -154,7 +156,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
 class _RssCard extends StatelessWidget {
   final RssItem item;
-
   const _RssCard({required this.item});
 
   @override
@@ -171,25 +172,26 @@ class _RssCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    item.source,
-                    style: const TextStyle(color: Colors.green, fontSize: 11),
+                    item.sourceName ?? '',
+                    style:
+                        const TextStyle(color: Colors.green, fontSize: 11),
                   ),
                 ),
-                if (item.publishedAt != null)
+                if (item.publishedAt.isNotEmpty)
                   Text(
-                    '${item.publishedAt!.day}/${item.publishedAt!.month}/${item.publishedAt!.year}',
+                    item.publishedAt,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
               ],
             ),
             const SizedBox(height: 8),
-
             // Titre
             Text(
               item.title,
@@ -199,37 +201,34 @@ class _RssCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-
             // Description
-            if (item.description != null && item.description!.isNotEmpty) ...
-              [
-                const SizedBox(height: 4),
-                Text(
-                  item.description!,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-
+            if (item.description != null && item.description!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                item.description!,
+                style: Theme.of(context).textTheme.bodySmall,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
             // Tags
-            if (item.tags != null && item.tags!.isNotEmpty) ...
-              [
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  children: item.tags!
-                      .take(3)
-                      .map(
-                        (tag) => Chip(
-                          label: Text(tag, style: const TextStyle(fontSize: 10)),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
+            if (item.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 4,
+                children: item.tags
+                    .take(3)
+                    .map(
+                      (tag) => Chip(
+                        label:
+                            Text(tag, style: const TextStyle(fontSize: 10)),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
           ],
         ),
       ),
