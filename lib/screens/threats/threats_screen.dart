@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/threat.dart';
 import '../../providers/threat_provider.dart';
 
@@ -25,7 +26,7 @@ class _ThreatsScreenState extends ConsumerState<ThreatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final threatsAsync = ref.watch(threatsProvider);
+    final threatState = ref.watch(threatNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +34,7 @@ class _ThreatsScreenState extends ConsumerState<ThreatsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(threatsProvider),
+            onPressed: () => ref.read(threatNotifierProvider.notifier).loadThreats(refresh: true),
           ),
         ],
       ),
@@ -63,7 +64,6 @@ class _ThreatsScreenState extends ConsumerState<ThreatsScreen> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-
           // Filtres de sévérité
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -91,14 +91,31 @@ class _ThreatsScreenState extends ConsumerState<ThreatsScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
           // Liste des menaces
           Expanded(
-            child: threatsAsync.when(
-              data: (threats) {
-                final filtered = threats.where((t) {
+            child: Builder(
+              builder: (context) {
+                if (threatState.isLoading && threatState.threats.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (threatState.error != null && threatState.threats.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error, color: Colors.red, size: 48),
+                        const SizedBox(height: 8),
+                        Text('Erreur: ${threatState.error}'),
+                        TextButton(
+                          onPressed: () => ref.read(threatNotifierProvider.notifier).loadThreats(refresh: true),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final filtered = threatState.threats.where((t) {
                   final matchesSeverity = _selectedSeverity == null ||
                       t.severity == _selectedSeverity;
                   final matchesSearch = _searchController.text.isEmpty ||
@@ -114,38 +131,19 @@ class _ThreatsScreenState extends ConsumerState<ThreatsScreen> {
                 }
 
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(threatsProvider),
+                  onRefresh: () async => ref.read(threatNotifierProvider.notifier).loadThreats(refresh: true),
                   child: ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final threat = filtered[index];
                       return _ThreatCard(
                         threat: threat,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/threats/detail',
-                          arguments: threat,
-                        ),
+                        onTap: () => context.push('/threats/${threat.id}'),
                       );
                     },
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error, color: Colors.red, size: 48),
-                    const SizedBox(height: 8),
-                    Text('Erreur: ${e.toString()}'),
-                    TextButton(
-                      onPressed: () => ref.invalidate(threatsProvider),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
         ],
@@ -192,7 +190,7 @@ class _ThreatCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(threat.family ?? 'Famille inconnue'),
+            Text(threat.family),
             const SizedBox(height: 2),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -207,9 +205,9 @@ class _ThreatCard extends StatelessWidget {
             ),
           ],
         ),
-        trailing: threat.firstSeen != null
+        trailing: threat.reportedAt.isNotEmpty
             ? Text(
-                '${threat.firstSeen!.day}/${threat.firstSeen!.month}/${threat.firstSeen!.year}',
+                threat.reportedAt,
                 style: Theme.of(context).textTheme.bodySmall,
               )
             : null,
