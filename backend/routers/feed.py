@@ -11,6 +11,7 @@ from datetime import datetime
 import feedparser
 import httpx
 from fastapi import APIRouter, Query
+from routers.translate import translate_items
 
 router = APIRouter()
 
@@ -181,6 +182,7 @@ async def get_feed(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     source: Optional[str] = None,
+    translate: bool = Query(False, description="Traduire les articles EN→FR"),
 ):
     cache_key = "feed_all"
     all_items = _cache_get(cache_key)
@@ -231,6 +233,11 @@ async def get_feed(
     start = (page - 1) * page_size
     end = start + page_size
     page_items = filtered[start:end]
+
+    # Traduction EN→FR à la demande (sur la page courante seulement)
+    if translate:
+        async with httpx.AsyncClient() as tr_client:
+            page_items = await translate_items(list(page_items), tr_client)
 
     return {
         "items": page_items,

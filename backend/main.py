@@ -7,7 +7,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from routers import feed, incidents, threats, stats
+from routers import feed, incidents, threats, stats, translate
 
 app = FastAPI(
     title="Sentinelle API",
@@ -19,7 +19,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -28,6 +28,7 @@ app.include_router(feed.router, prefix="/api/v1/feed", tags=["feed"])
 app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
 app.include_router(threats.router, prefix="/api/v1/threats", tags=["threats"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["stats"])
+app.include_router(translate.router, prefix="/api/v1/translate", tags=["translate"])
 
 
 @app.get("/health")
