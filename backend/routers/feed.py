@@ -15,33 +15,59 @@ from routers.translate import translate_items
 
 router = APIRouter()
 
-# Sources RSS cybersécurité
+# Sources RSS — toutes 100% spécialisées cybersécurité
 RSS_SOURCES = [
     # ── Sources francophones (priorité) ──────────────────────────────────────
-    {"name": "CERT-FR",              "url": "https://www.cert.ssi.gouv.fr/feed/",                          "lang": "fr"},
-    {"name": "ANSSI",                "url": "https://www.ssi.gouv.fr/feed/",                               "lang": "fr"},
-    {"name": "LeMagIT",              "url": "https://www.lemagit.fr/rss/Actualites",                        "lang": "fr"},
-    {"name": "ZDNet France",         "url": "https://www.zdnet.fr/feeds/rss/actualites/",                  "lang": "fr"},
-    {"name": "Global Security Mag",  "url": "https://www.globalsecuritymag.fr/rss.xml",                    "lang": "fr"},
-    {"name": "Le Monde Informatique","url": "https://www.lemondeinformatique.fr/flux-rss/thematique/securite/rss.xml", "lang": "fr"},
-    {"name": "Numerama",             "url": "https://www.numerama.com/feed/",                              "lang": "fr"},
-    {"name": "Next INpact",          "url": "https://www.nextinpact.com/rss/news.xml",                     "lang": "fr"},
+    {"name": "CERT-FR",              "url": "https://www.cert.ssi.gouv.fr/feed/",                                          "lang": "fr", "cyber_only": True},
+    {"name": "ANSSI",                "url": "https://www.ssi.gouv.fr/feed/",                                               "lang": "fr", "cyber_only": True},
+    {"name": "Global Security Mag",  "url": "https://www.globalsecuritymag.fr/rss.xml",                                    "lang": "fr", "cyber_only": True},
+    {"name": "Le Monde Informatique","url": "https://www.lemondeinformatique.fr/flux-rss/thematique/securite/rss.xml",     "lang": "fr", "cyber_only": True},
+    {"name": "Zataz",                "url": "https://www.zataz.com/feed/",                                                 "lang": "fr", "cyber_only": True},
+    {"name": "IT-Connect",           "url": "https://www.it-connect.fr/feed/",                                             "lang": "fr", "cyber_only": False},
+    {"name": "LeMagIT Sécurité",     "url": "https://www.lemagit.fr/rss/Securite",                                        "lang": "fr", "cyber_only": True},
+    {"name": "ZDNet France",         "url": "https://www.zdnet.fr/feeds/rss/actualites/",                                  "lang": "fr", "cyber_only": False},
     # ── Sources anglophones ──────────────────────────────────────────────────
-    {"name": "Krebs on Security",    "url": "https://krebsonsecurity.com/feed/",                           "lang": "en"},
-    {"name": "The Hacker News",      "url": "https://feeds.feedburner.com/TheHackersNews",                 "lang": "en"},
-    {"name": "BleepingComputer",     "url": "https://www.bleepingcomputer.com/feed/",                      "lang": "en"},
-    {"name": "Schneier on Security", "url": "https://www.schneier.com/feed/atom/",                         "lang": "en"},
-    {"name": "Dark Reading",         "url": "https://www.darkreading.com/rss.xml",                         "lang": "en"},
-    {"name": "SecurityWeek",         "url": "https://feeds.feedburner.com/securityweek",                   "lang": "en"},
-    {"name": "Naked Security",       "url": "https://nakedsecurity.sophos.com/feed/",                      "lang": "en"},
-    {"name": "Graham Cluley",        "url": "https://grahamcluley.com/feed/",                              "lang": "en"},
-    {"name": "SANS Internet Storm",  "url": "https://isc.sans.edu/rssfeed_full.xml",                       "lang": "en"},
-    {"name": "Mandiant",             "url": "https://www.mandiant.com/resources/blog/rss.xml",             "lang": "en"},
-    {"name": "Malwarebytes Labs",    "url": "https://www.malwarebytes.com/blog/feed/",                     "lang": "en"},
-    {"name": "Cisco Talos",          "url": "https://blog.talosintelligence.com/feeds/posts/default",      "lang": "en"},
-    {"name": "US-CERT CISA",         "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",       "lang": "en"},
-    {"name": "Rapid7",               "url": "https://blog.rapid7.com/rss/",                                "lang": "en"},
+    {"name": "Krebs on Security",    "url": "https://krebsonsecurity.com/feed/",                                           "lang": "en", "cyber_only": True},
+    {"name": "The Hacker News",      "url": "https://feeds.feedburner.com/TheHackersNews",                                 "lang": "en", "cyber_only": True},
+    {"name": "BleepingComputer",     "url": "https://www.bleepingcomputer.com/feed/",                                      "lang": "en", "cyber_only": True},
+    {"name": "Schneier on Security", "url": "https://www.schneier.com/feed/atom/",                                         "lang": "en", "cyber_only": True},
+    {"name": "Dark Reading",         "url": "https://www.darkreading.com/rss.xml",                                         "lang": "en", "cyber_only": True},
+    {"name": "SecurityWeek",         "url": "https://feeds.feedburner.com/securityweek",                                   "lang": "en", "cyber_only": True},
+    {"name": "Naked Security",       "url": "https://nakedsecurity.sophos.com/feed/",                                      "lang": "en", "cyber_only": True},
+    {"name": "Graham Cluley",        "url": "https://grahamcluley.com/feed/",                                              "lang": "en", "cyber_only": True},
+    {"name": "SANS Internet Storm",  "url": "https://isc.sans.edu/rssfeed_full.xml",                                       "lang": "en", "cyber_only": True},
+    {"name": "Mandiant",             "url": "https://www.mandiant.com/resources/blog/rss.xml",                             "lang": "en", "cyber_only": True},
+    {"name": "Malwarebytes Labs",    "url": "https://www.malwarebytes.com/blog/feed/",                                     "lang": "en", "cyber_only": True},
+    {"name": "Cisco Talos",          "url": "https://blog.talosintelligence.com/feeds/posts/default",                      "lang": "en", "cyber_only": True},
+    {"name": "US-CERT CISA",         "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",                       "lang": "en", "cyber_only": True},
+    {"name": "Rapid7",               "url": "https://blog.rapid7.com/rss/",                                               "lang": "en", "cyber_only": True},
 ]
+
+# Mots-clés cyber — filtre pour les sources non-exclusivement cyber
+CYBER_KEYWORDS = [
+    # FR
+    "sécurité", "cyberattaque", "ransomware", "piratage", "vulnérabilité",
+    "malware", "phishing", "hacker", "fuite", "brèche", "RGPD", "cybermenace",
+    "rançongiciel", "chiffrement", "authentification", "pare-feu", "intrusion",
+    "CVE", "zero-day", "CISA", "CERT", "incident", "attaque", "cybersécurité",
+    "données personnelles", "darkweb", "darknet", "botnet",
+    # EN
+    "security", "cyber", "breach", "hack", "exploit", "vulnerability",
+    "malware", "ransomware", "phishing", "threat", "attack", "infosec",
+    "password", "encryption", "firewall", "zero-day", "patch", "authentication",
+    "data leak", "spyware", "trojan", "backdoor", "APT",
+]
+
+_CYBER_RE = re.compile(
+    "|".join(re.escape(k) for k in CYBER_KEYWORDS),
+    re.IGNORECASE,
+)
+
+
+def _is_cyber_relevant(title: str, description: str) -> bool:
+    """Retourne True si l'article est lié à la cybersécurité."""
+    text = f"{title} {description}"
+    return bool(_CYBER_RE.search(text))
 
 # Cache simple en mémoire (TTL 10 min)
 _cache: dict = {}
@@ -140,16 +166,23 @@ async def _fetch_feed(source: dict, client: httpx.AsyncClient) -> list[dict]:
         resp = await client.get(source["url"], timeout=10, follow_redirects=True)
         parsed = feedparser.parse(resp.text)
         lang = source.get("lang", "en")
+        cyber_only = source.get("cyber_only", True)
         items = []
         for entry in parsed.entries[:15]:
             link = getattr(entry, "link", "")
             desc_raw = getattr(entry, "summary", "") or getattr(entry, "description", "")
             desc = re.sub(r"<[^>]+>", "", desc_raw)[:300]
+            title = getattr(entry, "title", "Sans titre")
+
+            # Pour les sources non-exclusivement cyber, filtrer par mots-clés
+            if not cyber_only and not _is_cyber_relevant(title, desc):
+                continue
+
             image_url = _extract_image(entry, desc_raw)
 
             items.append({
                 "id": _make_id(source["name"], link),
-                "title": getattr(entry, "title", "Sans titre"),
+                "title": title,
                 "link": link,
                 "published_at": _parse_date(entry),
                 "description": desc.strip() or None,
