@@ -21,8 +21,8 @@ RSS_SOURCES = [
     {"name": "CERT-FR",              "url": "https://www.cert.ssi.gouv.fr/feed/",                                          "lang": "fr", "cyber_only": True},
     {"name": "ANSSI",                "url": "https://www.ssi.gouv.fr/feed/",                                               "lang": "fr", "cyber_only": True},
     {"name": "Global Security Mag",  "url": "https://www.globalsecuritymag.fr/rss.xml",                                    "lang": "fr", "cyber_only": True},
-    {"name": "Le Monde Informatique","url": "https://www.lemondeinformatique.fr/flux-rss/thematique/securite/rss.xml",     "lang": "fr", "cyber_only": True},
-    {"name": "Zataz",                "url": "https://www.zataz.com/feed/",                                                 "lang": "fr", "cyber_only": True},
+    {"name": "Le Monde Informatique","url": "https://www.lemondeinformatique.fr/flux-rss/thematique/securite/rss.xml",     "lang": "fr", "cyber_only": False},
+    {"name": "Zataz",                "url": "https://www.zataz.com/feed/",                                                 "lang": "fr", "cyber_only": False},
     {"name": "IT-Connect",           "url": "https://www.it-connect.fr/feed/",                                             "lang": "fr", "cyber_only": False},
     {"name": "LeMagIT Sécurité",     "url": "https://www.lemagit.fr/rss/Securite",                                        "lang": "fr", "cyber_only": True},
     {"name": "ZDNet France",         "url": "https://www.zdnet.fr/feeds/rss/actualites/",                                  "lang": "fr", "cyber_only": False},
@@ -44,22 +44,75 @@ RSS_SOURCES = [
 ]
 
 # Mots-clés cyber — filtre pour les sources non-exclusivement cyber
-CYBER_KEYWORDS = [
-    # FR
-    "sécurité", "cyberattaque", "ransomware", "piratage", "vulnérabilité",
-    "malware", "phishing", "hacker", "fuite", "brèche", "RGPD", "cybermenace",
-    "rançongiciel", "chiffrement", "authentification", "pare-feu", "intrusion",
-    "CVE", "zero-day", "CISA", "CERT", "incident", "attaque", "cybersécurité",
-    "données personnelles", "darkweb", "darknet", "botnet",
-    # EN
-    "security", "cyber", "breach", "hack", "exploit", "vulnerability",
-    "malware", "ransomware", "phishing", "threat", "attack", "infosec",
-    "password", "encryption", "firewall", "zero-day", "patch", "authentication",
-    "data leak", "spyware", "trojan", "backdoor", "APT",
+# Chaque pattern est entouré de \b (word boundary) pour éviter les faux positifs
+# Ex: "RCE" ne matche pas "fo**rce**", "spy" ne matche pas "di**spy**lay"
+_CYBER_PATTERNS = [
+    # FR — attaques & incidents
+    r"cyberattaques?", r"ransomware", r"piratage", r"rançongiciel", r"malware",
+    r"phishing", r"hameçonnage", r"cyber-arnaque", r"escroquerie",
+    r"fraude informatique", r"fraude numérique", r"fraude en ligne",
+    r"intrusion", r"cybermenace", r"cybercriminalité",
+    r"violation de données", r"compromission",
+    # FR — données & vie privée
+    r"fuite de données", r"vol de données", r"données volées",
+    r"données personnelles", r"données sensibles",
+    r"RGPD", r"CNIL",
+    r"accès non autorisé", r"accès illégal", r"accès illégaux",
+    r"darkweb", r"darknet", r"dark web", r"dark net",
+    r"brèche",
+    # FR — outils & techniques
+    r"vulnérabilité", r"CVE-\d", r"CVE\s", r"zero-day", r"0-day", r"exploit",
+    r"failles?",
+    r"chiffrement", r"déchiffrement", r"cryptomonnaie",
+    r"botnet", r"DDoS", r"déni de service", r"injection SQL",
+    r"pare-feu", r"antivirus",
+    # FR — acteurs & structures
+    r"hacker", r"cybercriminel", r"hacktiviste",
+    r"CERT-FR", r"ANSSI", r"ENISA", r"cyberpolice",
+    r"doxing", r"doxxing", r"swatting",
+    # FR — sécurité générale
+    r"cybersécurité", r"sécurité informatique", r"sécurité numérique",
+    r"sécurité des systèmes", r"sécurisé", r"sécurisation",
+    r"authentification", r"mot de passe",
+    r"cheval de Troie", r"logiciel espion", r"spyware",
+    r"espionnage informatique", r"espionnage numérique",
+    r"arrestation.*informatique", r"mis en examen.*informatique",
+    r"faille de sécurité", r"faille informatique",
+    # EN — attacks & incidents
+    r"cyberattack", r"ransomware", r"malware", r"phishing", r"spear-phishing",
+    r"data breach", r"data leak", r"breach", r"exploit",
+    r"vulnerability", r"zero-day", r"0-day",
+    r"intrusion", r"compromise", r"threat actor",
+    r"scam", r"cyber fraud", r"eavesdropping", r"wiretapping",
+    r"exfiltration", r"stolen data", r"credentials stolen",
+    r"espionage", r"cyber espionage",
+    r"supply chain attack", r"supply-chain attack",
+    r"hack", r"hacked", r"hacking",
+    r"attack", r"attacked",
+    # EN — tools & techniques
+    r"CVE-\d", r"CVE\s", r"botnet", r"DDoS",
+    r"backdoor", r"trojan", r"rootkit", r"keylogger",
+    r"cryptojacking", r"SQL injection", r"remote code execution",
+    r"wiper", r"infostealer", r"dropper",
+    # EN — actors & orgs
+    r"hacker", r"cybercriminal",
+    r"CERT\b", r"CISA\b", r"ANSSI\b", r"ENISA\b",
+    r"doxing", r"doxxing", r"swatting",
+    # EN — security general
+    r"cybersecurity", r"information security", r"infosec",
+    r"cyber security", r"network security", r"security flaw",
+    r"security breach", r"security incident", r"security vulnerability",
+    r"security patch", r"security update", r"security advisory",
+    r"encryption", r"authentication bypass", r"password theft",
+    r"threat intelligence", r"cyber threat",
+    r"surveillance", r"nation-state",
+    r"arrested.*hacker", r"indicted.*hack", r"convicted.*cyber",
+    r"darknet", r"dark web",
 ]
 
 _CYBER_RE = re.compile(
-    "|".join(re.escape(k) for k in CYBER_KEYWORDS),
+    "|".join(r"\b" + p + r"\b" if not any(c in p for c in r"()[]{}.*+?^$\\|") else p
+             for p in _CYBER_PATTERNS),
     re.IGNORECASE,
 )
 
