@@ -2,10 +2,11 @@
 class ApiConstants {
   ApiConstants._();
 
-  // URL de base (modifier via env si besoin)
+  // URL de base — production Railway
+  // Override en dev : flutter run --dart-define=API_BASE_URL=http://localhost:8000
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://sentinelle-backend-production.up.railway.app',
   );
 
   static const String apiVersion = 'v1';
